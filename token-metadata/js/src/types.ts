@@ -1,7 +1,5 @@
 import { BN } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
-// @ts-ignore
-import { Mint, Account } from '@solana/spl-token';
 
 export type Network =
   | 'http://127.0.0.1:8899'
