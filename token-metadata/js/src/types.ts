@@ -1,7 +1,5 @@
 import { BN } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
-// @ts-ignore
-import { Mint, Account } from '@solana/spl-token';
 
 export type Network =
   | 'http://127.0.0.1:8899'
@@ -10,6 +8,8 @@ export type Network =
 
 export type AdminSettings = {
   platform: PublicKey;
+  createPromoLamports: BN;
+  redeemPromoTokenLamports: BN;
 };
 
 export type UI<T> = T & {

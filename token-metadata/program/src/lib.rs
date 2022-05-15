@@ -32,7 +32,7 @@ pub mod bpl_token_metadata {
         metadata_data: DataV2,
         is_mutable: bool,
     ) -> Result<()> {
-        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps["authority"]]];
+        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts
             .process(promo_data, metadata_data, is_mutable, authority_seeds)
     }
@@ -40,7 +40,7 @@ pub mod bpl_token_metadata {
     pub fn mint_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MintPromoToken<'info>>,
     ) -> Result<()> {
-        let mint_authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps["mint_authority"]]];
+        let mint_authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts.process(mint_authority_seeds)
     }
 
@@ -50,7 +50,7 @@ pub mod bpl_token_metadata {
         is_mutable: bool,
         max_supply: Option<u64>,
     ) -> Result<()> {
-        let mint_authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps["mint_authority"]]];
+        let mint_authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts
             .process(data, is_mutable, max_supply, mint_authority_seeds)
     }
@@ -59,30 +59,14 @@ pub mod bpl_token_metadata {
 // program and program data accounts commented out because they don't work
 // with anchor test. Uncomment before deployment. Can be tested on full
 // local test validator or devnet.
+// TODO: add program data check per anchor example
 #[derive(Accounts)]
 pub struct CreateAdminSettings<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(init, seeds = [ADMIN_PREFIX.as_bytes()], bump, payer = payer, space = AdminSettings::LEN)]
     pub admin_settings: Account<'info, AdminSettings>,
-    // #[account(constraint = program.programdata_address() == Some(program_data.key()))]
-    // pub program: Program<'info, crate::program::Mediamarket>,
-    // // only the program update authority can initialize the admin settings account
-    // #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()))]
-    // pub program_data: Account<'info, ProgramData>,
     pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct UpdateAdminSettings<'info> {
-    #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
-    pub admin_settings: Account<'info, AdminSettings>,
-    // #[account(constraint = program.programdata_address() == Some(program_data.key()))]
-    // pub program: Program<'info, crate::program::Mediamarket>,
-    // // only the program update authority can update the admin settings account
-    // #[account(constraint = program_data.upgrade_authority_address == Some(authority.key()))]
-    // pub program_data: Account<'info, ProgramData>,
-    pub authority: Signer<'info>,
 }
 
 #[derive(Accounts, Clone)]
@@ -130,20 +114,16 @@ pub struct TransferSol<'info> {
 pub struct MintPromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut, constraint = promo_owner.key() == promo.owner)]
+    pub promo_owner: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
-    // Only this program will be able to mint tokens.
-    #[account(mut, constraint = mint.key() == metadata.mint)]
-    pub metadata: Box<Account<'info, Metadata>>,
     /// CHECK: pubkey checked via seeds
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
     // Only one series_params account per mint can exist.
     #[account(seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
-    /// CHECK: pubkey checked via constraint
-    #[account(mut, constraint = platform.key() == admin_settings.platform)]
-    pub platform: UncheckedAccount<'info>,
     #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Account<'info, AdminSettings>,
     #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = payer)]

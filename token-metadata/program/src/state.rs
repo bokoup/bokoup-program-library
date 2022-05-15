@@ -12,11 +12,16 @@ use mpl_token_metadata::state::{
 #[derive(Default)]
 pub struct AdminSettings {
     pub platform: Pubkey,
+    pub create_promo_lamports: u64,
+    pub redeem_promo_token_lamports: u64,
 }
 
 // Add extra space here when deployed to allow for additional settings
 impl AdminSettings {
-    pub const LEN: usize = 8 + 32;
+    pub const LEN: usize = 8
+    + 32    // platform,
+    + 32    // create_promo_lamports,
+    + 32; // redeem_promo_token_lamports
 }
 
 //==============================
