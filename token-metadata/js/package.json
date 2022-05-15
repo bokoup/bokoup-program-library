@@ -21,18 +21,18 @@
     "@project-serum/anchor": "^0.24.2",
     "@solana/buffer-layout": "^4.0.0",
     "@solana/spl-token": "^0.2.0",
-    "bn.js": "^5.2.0"
+    "bigint-buffer": "^1.1.5"
   },
   "devDependencies": {
-    "eslint": "^8.15.0",
-    "prettier": "^2.5.1",
-    "rimraf": "^3.0.2",
-    "typescript": "^4.6.4",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
+    "eslint": "^8.15.0",
     "mocha": "^10.0.0",
-    "ts-mocha": "^10.0.0"
+    "prettier": "^2.5.1",
+    "rimraf": "^3.0.2",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^4.6.4"
   }
 }

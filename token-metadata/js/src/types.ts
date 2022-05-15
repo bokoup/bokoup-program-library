@@ -10,6 +10,8 @@ export type Network =
 
 export type AdminSettings = {
   platform: PublicKey;
+  createPromoLamports: BN;
+  redeemPromoTokenLamports: BN;
 };
 
 export type UI<T> = T & {

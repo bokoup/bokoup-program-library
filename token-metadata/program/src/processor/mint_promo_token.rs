@@ -6,7 +6,7 @@ impl<'info> MintPromoToken<'info> {
         msg!("Issue promo token");
 
         if let Some(max_mint) = self.promo.max_mint {
-            if self.mint.supply == max_mint as u64 {
+            if self.mint.supply >= max_mint as u64 {
                 return Err(ProgramError::MaxMintExceeded.into());
             }
         }
