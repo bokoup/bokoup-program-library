@@ -1,0 +1,5 @@
+[workspace]
+members=[
+  "token-metadata/program",
+  "indexer"
+]

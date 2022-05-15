@@ -1,0 +1,23 @@
+[features]
+seeds = true
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+commitment = "confirmed"
+
+[workspace]
+members = ["token-metadata/program"]
+
+[programs.localnet]
+bpl_token_metadata = "CsmkSwyBPpihA6qiNGKtWR3DV6RNxJKBo4xBMPt414Eq"
+
+[scripts]
+test = "yarn run ts-mocha -p token-metadata/js/tsconfig.json -t 1000000 token-metadata/js/test/promo.spec.ts"
+
+[test]
+startup_wait = 20000
+[test.validator]
+url = "https://api.devnet.solana.com"
+[[test.validator.clone]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"

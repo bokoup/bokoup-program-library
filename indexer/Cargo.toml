@@ -1,0 +1,22 @@
+[package]
+name = "bpl-indexer"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+anchor-lang = "0.24.2"
+bs58 = "0.4.0"
+log = "0.4.16"
+serde = "1.0.133"
+serde_derive = "1.0.103"
+serde_json = {version = "1.0.74", features = ["preserve_order"] }
+solana-geyser-plugin-interface = "~1.9.15"
+solana-logger = { version = "~1.9.15" }
+bpl-token-metadata = { path = "../token-metadata/program"}
+smol = "1.2.5"
+
+[dev-dependencies]
+libc = "0.2.124"

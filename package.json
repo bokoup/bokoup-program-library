@@ -1,0 +1,34 @@
+{
+    "name": "@bokoup/bokoup-program-library",
+    "packageManager": "yarn@3.2.0-rc.12",
+    "version": "0.1.0",
+    "description": "Programs for coupons, promotional offers and loyalty tokens on the Solana blockchain.",
+    "scripts": {
+        "build:token-metadata": "lerna run build --scope @bokoup/bpl-token-metadata",
+        "test": "lerna run --parallel test",
+        "lint": "lerna run --parallel lint",
+        "fix": "lerna run --parallel fix"
+    },
+    "workspaces": [
+        "token-metadata/js"
+    ],
+    "repository": "git@github.com:bokoup/bokoup-program-library.git",
+    "author": "Bokoup Maintainers <info@bokoup.so>",
+    "license": "Apache-2.0",
+    "private": true,
+    "devDependencies": {
+        "@project-serum/anchor": "^0.24.2",
+        "@typescript-eslint/eslint-plugin": "^5.4.0",
+        "@typescript-eslint/parser": "^5.4.0",
+        "esbuild": "^0.14.14",
+        "esbuild-runner": "^2.2.1",
+        "eslint": "^8.3.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "lerna": "^4.0.0",
+        "prettier": "^2.4.1"
+    },
+    "resolutions": {
+        "**/@solana/spl-token": "0.2.0"
+    }
+}
