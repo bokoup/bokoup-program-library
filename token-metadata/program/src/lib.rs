@@ -40,8 +40,21 @@ pub mod bpl_token_metadata {
     pub fn mint_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MintPromoToken<'info>>,
     ) -> Result<()> {
-        let mint_authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
-        ctx.accounts.process(mint_authority_seeds)
+        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
+        ctx.accounts.process(authority_seeds)
+    }
+
+    pub fn delegate_promo_token<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, DelegatePromoToken<'info>>,
+    ) -> Result<()> {
+        ctx.accounts.process()
+    }
+
+    pub fn burn_promo_token<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, BurnPromoToken<'info>>,
+    ) -> Result<()> {
+        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
+        ctx.accounts.process(authority_seeds)
     }
 
     pub fn create_non_fungible(
@@ -56,9 +69,6 @@ pub mod bpl_token_metadata {
     }
 }
 
-// program and program data accounts commented out because they don't work
-// with anchor test. Uncomment before deployment. Can be tested on full
-// local test validator or devnet.
 // TODO: add program data check per anchor example
 #[derive(Accounts)]
 pub struct CreateAdminSettings<'info> {
@@ -82,15 +92,13 @@ pub struct CreatePromo<'info> {
     /// CHECK: pubkey checked via seeds
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
-    // Only one series_params account per mint can exist.
-    // Platform address has to be the first item in the creators array.
     #[account(init, payer = payer, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump,
         constraint = promo_data.owner == payer.key(),
         space = Promo::LEN)]
     pub promo: Box<Account<'info, Promo>>,
     /// CHECK: pubkey checked via constraint
     #[account(mut, constraint = platform.key() == admin_settings.platform)]
-    pub platform: AccountInfo<'info>,
+    pub platform: UncheckedAccount<'info>,
     #[account(seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Box<Account<'info, AdminSettings>>,
     pub metadata_program: Program<'info, TokenMetadata>,
@@ -121,12 +129,52 @@ pub struct MintPromoToken<'info> {
     /// CHECK: pubkey checked via seeds
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
-    // Only one series_params account per mint can exist.
-    #[account(seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
+    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
     #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Account<'info, AdminSettings>,
     #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = payer)]
+    pub token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts, Clone)]
+pub struct DelegatePromoToken<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    /// CHECK: pubkey checked via seeds
+    #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
+    pub authority: UncheckedAccount<'info>,
+    pub promo: Account<'info, Promo>,
+    #[account(mut, constraint = token_account.mint == promo.mint)]
+    pub token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts, Clone)]
+pub struct BurnPromoToken<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(mut, constraint = promo_owner.key() == promo.owner)]
+    pub promo_owner: Signer<'info>,
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+    /// CHECK: pubkey checked via seeds
+    #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
+    pub authority: UncheckedAccount<'info>,
+    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
+    pub promo: Account<'info, Promo>,
+    #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
+    pub admin_settings: Account<'info, AdminSettings>,
+    #[account(mut,
+        constraint = token_account.mint == mint.key(),
+        constraint = token_account.delegate.unwrap() == authority.key(),
+        constraint = token_account.delegated_amount > 0,
+    )]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -145,12 +193,12 @@ pub struct CreateNonFungible<'info> {
     pub mint: Account<'info, Mint>,
     #[account(init, payer = payer, associated_token::mint = mint, associated_token::authority = authority)]
     pub token_account: Account<'info, TokenAccount>,
-    /// CHECK: pubkey checked via seeds
+    /// CHECK: checked via cpi
     #[account(mut)]
     pub metadata_account: UncheckedAccount<'info>,
-    /// CHECK: pubkey checked via seeds
+    /// CHECK: checked via cpi
     #[account(mut)]
-    pub edition_account: AccountInfo<'info>,
+    pub edition_account: UncheckedAccount<'info>,
     pub metadata_program: Program<'info, TokenMetadata>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -162,15 +210,15 @@ pub struct CreateNonFungible<'info> {
 pub struct CreateMetaData<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    /// CHECK: pubkey checked via seeds
-    pub metadata_account: AccountInfo<'info>,
+    /// CHECK: checked via cpi
+    pub metadata_account: UncheckedAccount<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
-    /// CHECK: pubkey checked via seeds
+    /// CHECK: checked via cpi
     #[account(mut)]
-    pub mint_authority: AccountInfo<'info>,
-    /// CHECK: pubkey checked via seeds
-    pub metadata_authority: AccountInfo<'info>,
+    pub mint_authority: UncheckedAccount<'info>,
+    /// CHECK: checked via cpi
+    pub metadata_authority: UncheckedAccount<'info>,
     pub metadata_program: Program<'info, TokenMetadata>,
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
@@ -180,10 +228,10 @@ impl<'info> From<CreatePromo<'info>> for CreateMetaData<'info> {
     fn from(item: CreatePromo<'info>) -> Self {
         CreateMetaData {
             payer: item.payer,
-            metadata_account: item.metadata.to_account_info(),
+            metadata_account: item.metadata,
             mint: item.mint,
-            mint_authority: item.authority.to_account_info(),
-            metadata_authority: item.authority.to_account_info(),
+            mint_authority: item.authority.clone(),
+            metadata_authority: item.authority,
             metadata_program: item.metadata_program,
             rent: item.rent,
             system_program: item.system_program,
@@ -195,10 +243,10 @@ impl<'info> From<CreateNonFungible<'info>> for CreateMetaData<'info> {
     fn from(item: CreateNonFungible<'info>) -> Self {
         CreateMetaData {
             payer: item.payer,
-            metadata_account: item.metadata_account.to_account_info(),
+            metadata_account: item.metadata_account,
             mint: item.mint,
-            mint_authority: item.authority.to_account_info(),
-            metadata_authority: item.authority.to_account_info(),
+            mint_authority: item.authority.clone(),
+            metadata_authority: item.authority,
             metadata_program: item.metadata_program,
             rent: item.rent,
             system_program: item.system_program,

@@ -20,8 +20,10 @@ export type Promo = {
   owner: PublicKey;
   mint: PublicKey;
   metadata: PublicKey;
+  mints: number,
+  burns: number,
   maxMint: number | null;
-  maxRedeem: number | null;
+  maxBurn: number | null;
   expiry: BN | null;
 };
 

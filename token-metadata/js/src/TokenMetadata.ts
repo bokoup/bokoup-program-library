@@ -89,7 +89,7 @@ export class TokenMetadata {
    * @param metadataData Metadata data
    * @param isMutable    Whether metadata is mutable
    * @param maxMint      Max number of tokens to mint
-   * @param maxRedeem    Optional max number of tokens to redeem
+   * @param maxBurn      Optional max number of tokens that can used
    * @param expiry       Optional expiration date
    * @param payer        Optional alternate owner and payer
    *
@@ -100,7 +100,7 @@ export class TokenMetadata {
     metadataData: DataV2,
     isMutable: boolean,
     maxMint: number,
-    maxRedeem?: number,
+    maxBurn?: number,
     expiry?: Date,
     payer?: Keypair,
   ): Promise<PublicKey> {
@@ -122,8 +122,10 @@ export class TokenMetadata {
       owner,
       mint: mint.publicKey,
       metadata,
+      mints: 0,
+      burns: 0,
       maxMint,
-      maxRedeem: maxRedeem == undefined ? null : maxRedeem,
+      maxBurn: maxBurn == undefined ? null : maxBurn,
       expiry: expiry == undefined ? null : new BN(expiry.valueOf() / 1000),
     };
 
@@ -158,6 +160,52 @@ export class TokenMetadata {
 
     await this.program.methods
       .mintPromoToken()
+      .accounts({
+        mint,
+        tokenAccount,
+        promoOwner: promoOwner.publicKey,
+      })
+      .signers([promoOwner])
+      .rpc();
+
+    return tokenAccount;
+  }
+
+  /**
+   * Delegate promo token
+   *
+   * @param promo Promo address
+   * @param mint  Mint address
+   *
+   * @return Token account address
+   */
+  async delegatePromoToken(promo: PublicKey, mint: PublicKey): Promise<PublicKey> {
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
+
+    await this.program.methods
+      .delegatePromoToken()
+      .accounts({
+        promo,
+        tokenAccount,
+      })
+      .rpc();
+
+    return tokenAccount;
+  }
+
+  /**
+   * Burn promo token
+   *
+   * @param promo Promo address
+   * @param mint  Mint address
+   *
+   * @return Token account address
+   */
+  async burnPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
+
+    await this.program.methods
+      .burnPromoToken()
       .accounts({
         mint,
         tokenAccount,
