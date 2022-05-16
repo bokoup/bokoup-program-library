@@ -40,8 +40,21 @@ pub mod bpl_token_metadata {
     pub fn mint_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MintPromoToken<'info>>,
     ) -> Result<()> {
-        let mint_authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
-        ctx.accounts.process(mint_authority_seeds)
+        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
+        ctx.accounts.process(authority_seeds)
+    }
+
+    pub fn delegate_promo_token<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, DelegatePromoToken<'info>>,
+    ) -> Result<()> {
+        ctx.accounts.process()
+    }
+
+    pub fn burn_promo_token<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, BurnPromoToken<'info>>,
+    ) -> Result<()> {
+        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
+        ctx.accounts.process(authority_seeds)
     }
 
     pub fn create_non_fungible(
@@ -122,11 +135,54 @@ pub struct MintPromoToken<'info> {
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
     // Only one series_params account per mint can exist.
-    #[account(seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
+    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
     #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Account<'info, AdminSettings>,
     #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = payer)]
+    pub token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts, Clone)]
+pub struct DelegatePromoToken<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    /// CHECK: pubkey checked via seeds
+    #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
+    pub authority: UncheckedAccount<'info>,
+    // Only one series_params account per mint can exist.
+    pub promo: Account<'info, Promo>,
+    #[account(mut, constraint = token_account.mint == promo.mint)]
+    pub token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts, Clone)]
+pub struct BurnPromoToken<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(mut, constraint = promo_owner.key() == promo.owner)]
+    pub promo_owner: Signer<'info>,
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+    /// CHECK: pubkey checked via seeds
+    #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
+    pub authority: UncheckedAccount<'info>,
+    // Only one series_params account per mint can exist.
+    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
+    pub promo: Account<'info, Promo>,
+    #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
+    pub admin_settings: Account<'info, AdminSettings>,
+    #[account(mut,
+        constraint = token_account.mint == mint.key(),
+        constraint = token_account.delegate.unwrap() == authority.key(),
+        constraint = token_account.delegated_amount > 0,
+    )]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,

@@ -1,12 +1,12 @@
-use crate::{error::ProgramError, MintPromoToken};
+use crate::{error::ProgramError, BurnPromoToken};
 use anchor_lang::prelude::*;
 
-impl<'info> MintPromoToken<'info> {
+impl<'info> BurnPromoToken<'info> {
     pub fn process(&mut self, authority_seeds: [&[u8]; 2]) -> Result<()> {
-        msg!("Mint promo token");
+        msg!("Burn promo token");
 
-        if let Some(max_mint) = self.promo.max_mint {
-            if self.promo.mints >= max_mint {
+        if let Some(max_burn) = self.promo.max_burn {
+            if self.promo.burns >= max_burn {
                 return Err(ProgramError::MaxMintExceeded.into());
             }
         }
@@ -18,22 +18,22 @@ impl<'info> MintPromoToken<'info> {
             }
         }
 
-        let mint_to_ctx = anchor_spl::token::MintTo {
+        let burn_ctx = anchor_spl::token::Burn {
             mint: self.mint.to_account_info(),
-            to: self.token_account.to_account_info(),
+            from: self.token_account.to_account_info(),
             authority: self.authority.to_account_info(),
         };
 
-        anchor_spl::token::mint_to(
+        anchor_spl::token::burn(
             CpiContext::new_with_signer(
                 self.token_program.to_account_info(),
-                mint_to_ctx,
+                burn_ctx,
                 &[&authority_seeds],
             ),
             1,
         )?;
 
-        self.promo.mints += 1;
+        self.promo.burns += 1;
 
         Ok(())
     }

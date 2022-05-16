@@ -33,13 +33,15 @@ impl AdminSettings {
 // add option to restrict transfer - transfer author
 
 #[account]
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy)]
 pub struct Promo {
     pub owner: Pubkey,
     pub mint: Pubkey,
     pub metadata: Pubkey,
+    pub mints: u32,
+    pub burns: u32,
     pub max_mint: Option<u32>,
-    pub max_redeem: Option<u32>,
+    pub max_burn: Option<u32>,
     pub expiry: Option<i64>,
 }
 
@@ -48,6 +50,8 @@ impl Promo {
     + 32        // owner
     + 32        // mint
     + 32        // metadata
+    + 16        // mints
+    + 16        // burns
     + 1 + 4     // max_mint
     + 1 + 4     // max_redeem
     + 1 + 8; // expiry

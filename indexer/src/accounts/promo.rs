@@ -10,7 +10,7 @@ pub(crate) async fn process(key: &[u8], account: Promo) -> Result<()> {
         "mint": account.mint.to_string(),
         "metadata": account.metadata.to_string(),
         "maxMint": account.max_mint,
-        "maxRedeem": account.max_redeem,
+        "maxRedeem": account.max_burn,
         "expiry": account.expiry,
     });
 

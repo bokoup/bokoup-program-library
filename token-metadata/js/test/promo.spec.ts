@@ -76,10 +76,10 @@ describe('promo', () => {
     );
 
     promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
-    console.log(promoAccount);
+    console.log("promoAccount: ", promoAccount);
 
     metadataAccount = await Metadata.fromAccountAddress(provider.connection, promoAccount.metadata);
-    console.log(metadataAccount);
+    console.log("metadataAccount: ", metadataAccount);
 
     const platformAccountInfo = await tokenMetadata.program.provider.connection.getAccountInfo(
       adminSettingsAccount.platform,
@@ -101,9 +101,37 @@ describe('promo', () => {
           tokenMetadata.getMint(promoAccount.mint),
         ]),
       );
-    console.log('tokenAccountAccount: ', tokenAccountAccount);
-    console.log('mintAccount: ', mintAccount);
+    promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
+
     expect(Number(tokenAccountAccount.amount)).to.equal(1, 'Token account amount incorrect.');
     expect(Number(mintAccount.supply)).to.equal(1, 'Mint supply incorrect.');
+    expect(promoAccount.mints).to.equal(1, 'Promo mints incorrect.');
+
+    console.log('tokenAccountAccount: ', tokenAccountAccount);
+    console.log('mintAccount: ', mintAccount);
+  });
+
+  it('Delegates a promo token', async () => {
+    const tokenAccountAccount = await tokenMetadata
+      .delegatePromoToken(promo, promoAccount.mint)
+      .then((tokenAccount) =>
+        tokenMetadata.getTokenAccount(tokenAccount)
+      );
+    expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
+  });
+
+  it('Burns a promo token', async () => {
+    const [tokenAccountAccount, mintAccount] = await tokenMetadata
+      .burnPromoToken(promoAccount.mint, promoOwner)
+      .then((tokenAccount) =>
+        Promise.all([
+          tokenMetadata.getTokenAccount(tokenAccount),
+          tokenMetadata.getMint(promoAccount.mint),
+        ]),
+      );
+    promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
+    expect(Number(tokenAccountAccount.amount)).to.equal(0, 'Token account amount incorrect.');
+    expect(Number(mintAccount.supply)).to.equal(0, 'Mint supply incorrect.');
+    expect(promoAccount.burns).to.equal(1, 'Promo burns incorrect.');
   });
 });
