@@ -55,9 +55,9 @@ pub fn create_metadata_accounts_v2<'a, 'b, 'c, 'info>(
         &[
             ctx.accounts.metadata_account.to_account_info(),
             ctx.accounts.mint.to_account_info(),
-            ctx.accounts.mint_authority.clone(),
+            ctx.accounts.mint_authority.to_account_info(),
             ctx.accounts.payer.to_account_info(),
-            ctx.accounts.metadata_authority.clone(),
+            ctx.accounts.metadata_authority.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ],
@@ -83,7 +83,7 @@ pub fn create_master_edition_v3<'a, 'b, 'c, 'info>(
     anchor_lang::solana_program::program::invoke_signed(
         &ix,
         &[
-            ctx.accounts.edition_account,
+            ctx.accounts.edition_account.to_account_info(),
             ctx.accounts.metadata_account.to_account_info(),
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.authority.to_account_info(),
