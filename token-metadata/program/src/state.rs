@@ -13,7 +13,7 @@ use mpl_token_metadata::state::{
 pub struct AdminSettings {
     pub platform: Pubkey,
     pub create_promo_lamports: u64,
-    pub redeem_promo_token_lamports: u64,
+    pub burn_promo_token_lamports: u64,
 }
 
 // Add extra space here when deployed to allow for additional settings

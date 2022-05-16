@@ -108,17 +108,6 @@ pub struct CreatePromo<'info> {
 }
 
 #[derive(Accounts, Clone)]
-pub struct TransferSol<'info> {
-    /// CHECK: unchecked
-    #[account(mut)]
-    pub payer: AccountInfo<'info>,
-    /// CHECK: unchecked
-    #[account(mut)]
-    pub to: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts, Clone)]
 pub struct MintPromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -168,6 +157,9 @@ pub struct BurnPromoToken<'info> {
     pub authority: UncheckedAccount<'info>,
     #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
+    /// CHECK: pubkey checked via constraint
+    #[account(mut, constraint = platform.key() == admin_settings.platform)]
+    pub platform: UncheckedAccount<'info>,
     #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Account<'info, AdminSettings>,
     #[account(mut,
@@ -252,6 +244,17 @@ impl<'info> From<CreateNonFungible<'info>> for CreateMetaData<'info> {
             system_program: item.system_program,
         }
     }
+}
+
+#[derive(Accounts, Clone)]
+pub struct TransferSol<'info> {
+    /// CHECK: unchecked
+    #[account(mut)]
+    pub payer: AccountInfo<'info>,
+    /// CHECK: unchecked
+    #[account(mut)]
+    pub to: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Clone)]

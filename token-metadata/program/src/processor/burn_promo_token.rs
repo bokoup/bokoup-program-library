@@ -1,4 +1,5 @@
-use crate::{error::ProgramError, BurnPromoToken};
+use crate::utils::transfer_sol;
+use crate::{error::ProgramError, BurnPromoToken, TransferSol};
 use anchor_lang::prelude::*;
 
 impl<'info> BurnPromoToken<'info> {
@@ -7,7 +8,7 @@ impl<'info> BurnPromoToken<'info> {
 
         if let Some(max_burn) = self.promo.max_burn {
             if self.promo.burns >= max_burn {
-                return Err(ProgramError::MaxMintExceeded.into());
+                return Err(ProgramError::MaxBurnExceeded.into());
             }
         }
 
@@ -16,6 +17,20 @@ impl<'info> BurnPromoToken<'info> {
             if clock.unix_timestamp >= expiry {
                 return Err(ProgramError::ExpiryExceeded.into());
             }
+        }
+
+        if self.admin_settings.burn_promo_token_lamports > 0 {
+            transfer_sol(
+                CpiContext::new(
+                    self.system_program.to_account_info(),
+                    TransferSol {
+                        payer: self.promo_owner.to_account_info(),
+                        to: self.platform.to_account_info(),
+                        system_program: self.system_program.clone(),
+                    },
+                ),
+                self.admin_settings.create_promo_lamports,
+            )?;
         }
 
         let burn_ctx = anchor_spl::token::Burn {

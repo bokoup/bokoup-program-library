@@ -6,6 +6,8 @@ use anchor_lang::prelude::*;
 pub enum ProgramError {
     #[msg("Max mints exceeded.")]
     MaxMintExceeded,
+    #[msg("Max burns exceeded.")]
+    MaxBurnExceeded,
     #[msg("Expiry exceeded.")]
     ExpiryExceeded,
 }

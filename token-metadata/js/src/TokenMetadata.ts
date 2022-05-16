@@ -201,15 +201,16 @@ export class TokenMetadata {
    *
    * @return Token account address
    */
-  async burnPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+  async burnPromoToken(platform: PublicKey, mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
       .burnPromoToken()
       .accounts({
         mint,
-        tokenAccount,
         promoOwner: promoOwner.publicKey,
+        tokenAccount,
+        platform
       })
       .signers([promoOwner])
       .rpc();

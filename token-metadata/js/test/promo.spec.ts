@@ -121,17 +121,32 @@ describe('promo', () => {
   });
 
   it('Burns a promo token', async () => {
+    const platformStartAccountInfo = await tokenMetadata.program.provider.connection.getAccountInfo(
+      adminSettingsAccount.platform,
+    );
+
     const [tokenAccountAccount, mintAccount] = await tokenMetadata
-      .burnPromoToken(promoAccount.mint, promoOwner)
+      .burnPromoToken(platform.publicKey, promoAccount.mint, promoOwner)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadata.getTokenAccount(tokenAccount),
           tokenMetadata.getMint(promoAccount.mint),
         ]),
       );
+
     promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
     expect(Number(tokenAccountAccount.amount)).to.equal(0, 'Token account amount incorrect.');
     expect(Number(mintAccount.supply)).to.equal(0, 'Mint supply incorrect.');
     expect(promoAccount.burns).to.equal(1, 'Promo burns incorrect.');
+
+    const platformAccountInfo = await tokenMetadata.program.provider.connection.getAccountInfo(
+      adminSettingsAccount.platform,
+    );
+    if (platformStartAccountInfo !== null && platformAccountInfo !== null) {
+      expect(platformAccountInfo.lamports).to.equal(
+        platformStartAccountInfo.lamports + adminSettingsAccount.burnPromoTokenLamports.toNumber(),
+        'Platform lamports incorrect.',
+      );
+    }
   });
 });
