@@ -1,8 +1,9 @@
-import React, { FC, useContext, useMemo, memo } from 'react';
+import React, { FC, useContext, useMemo, memo, Fragment } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
+import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import CardMedia from '@mui/material/CardMedia';
@@ -32,23 +33,33 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         }
         return link
     }
-    const promoExtended = state.promoExtendeds[mintString]
+    const promoExtended = state.promoExtendeds[mintString];
+    const tokenAccount = state.tokenAccounts[mintString];
 
-    // const tokenAccountExists = state.walletConnected && seriesParam.hasOwnProperty("tokenAccount");
-    // const tokenAmount = tokenAccountExists ? seriesParam.tokenAccount.amount > 0 : false;
+    const stats: Attribute[] = [
+        { "traitType": "supply", "value": Number(promoExtended.mintAccount.supply) },
+        { "traitType": "minted", "value": promoExtended.mints },
+        { "traitType": "burned", "value": promoExtended.burns },
+        { "traitType": "maxMint", "value": promoExtended.maxMint },
+        { "traitType": "maxBurn", "value": promoExtended.maxBurn },
+        { "traitType": "expiry", "value": promoExtended.expiry.toISOString().split("T")[0] },
+    ];
 
+    const myStats: Attribute[] = [
+        { "traitType": "owned", "value": tokenAccount ? Number(tokenAccount.amount) : 0 },
+    ];
 
-    function getStatsAttributes(): Attribute[] {
-        return [
-            { "traitType": "outstanding", "value": Number(promoExtended.mintAccount.supply) },
-            { "traitType": "minted", "value": promoExtended.mints },
-            { "traitType": "burned", "value": promoExtended.burns },
-            { "traitType": "maxMint", "value": promoExtended.maxMint },
-            { "traitType": "maxBurn", "value": promoExtended.maxBurn },
-            { "traitType": "expiry", "value": promoExtended.expiry.toISOString().split("T")[0] },
-        ];
+    const Stats: FC<{ stats: Attribute[], title: string }> = ({ stats, title }) => {
+        return (
+            <Fragment>
+                <Typography sx={{ fontSize: 12 }} component="div">
+                    {title}
+                </Typography>
+                <Attributes attributes={stats} />
+                <Divider sx={{ pt: 1, mb: 1 }} />
+            </Fragment>
+        )
     }
-
     return (
         <Grid item xs={12} md={6} lg={3}>
             <Card raised>
@@ -77,19 +88,15 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     </Typography>
                     <Attributes attributes={promoExtended.metadataJson.attributes} />
                     <Divider sx={{ pt: 1, mb: 1 }} />
-                    <Typography sx={{ fontSize: 12 }} component="div">
-                        STATS
-                    </Typography>
-                    <Attributes attributes={getStatsAttributes()} />
-                    <Divider sx={{ pt: 1, mb: 1 }} />
-                    <Typography sx={{ fontSize: 12 }} component="div">
-                        MY STATS
-                    </Typography>
-                    <Button variant="contained" color="primary" disabled={true}>
-                        SELL
-                    </Button>
-
+                    <Stats stats={stats} title={"STATS"} />
+                    {state.walletConnected ? <Stats stats={myStats} title="MY PROMOS" /> : null}
                 </CardContent>
+                {state.walletConnected ?
+                    <CardActions sx={{ justifyContent: "center", mb: 2 }}>
+                        <Button variant="contained" color="primary">
+                            GET PROMO
+                        </Button>
+                    </CardActions> : null}
             </Card>
         </Grid >
     );
