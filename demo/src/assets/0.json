@@ -1,0 +1,23 @@
+{
+    "name": "Promo 1",
+    "symbol": "P1",
+    "description": "Buy $SOL1, Get 25% Off",
+    "seller_fee_basis_points": 0,
+    "attributes": [
+        {
+            "trait_type": "uses",
+            "value": "1"
+        },
+        {
+            "trait_type": "transferrable",
+            "value": "yes"
+        }
+    ],
+    "collection": {
+        "name": "bokoup",
+        "family": "genesis"
+    },
+    "properties": {
+        "category": "image"
+    }
+}

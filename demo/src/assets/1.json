@@ -1,0 +1,30 @@
+{
+    "name": "Promo 2",
+    "symbol": "P2",
+    "description": "Buy 1 Glass, Get 1 Glass Free. ",
+    "seller_fee_basis_points": 0,
+    "attributes": [
+        {
+            "trait_type": "uses",
+            "value": "1"
+        },
+        {
+            "trait_type": "transferrable",
+            "value": "yes"
+        }
+    ],
+    "collection": {
+        "name": "bokoup",
+        "family": "genesis"
+    },
+    "properties": {
+        "category": "image",
+        "files": [
+            {
+                "uri": "https://arweave.net/cj_2-yk14TrqbCb0Y2Q2ZTz5nZEn2L3E6rAHJnJNTA8",
+                "type": "image/png"
+            }
+        ]
+    },
+    "image": "https://arweave.net/cj_2-yk14TrqbCb0Y2Q2ZTz5nZEn2L3E6rAHJnJNTA8"
+}

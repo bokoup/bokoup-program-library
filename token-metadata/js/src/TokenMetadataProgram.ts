@@ -1,16 +1,21 @@
+import fetch from 'cross-fetch';
 import { PublicKey, Keypair } from '@solana/web3.js';
 import { Program, Provider, Wallet, Idl, AnchorProvider, BN } from '@project-serum/anchor';
-import { Promo, DataV2 } from '.';
-import { PROGRAM_ID as METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
 import {
-  getAccount,
-  getMint as getTokenMint,
+  Metadata,
+  PROGRAM_ID as METADATA_PROGRAM_ID,
+} from '@metaplex-foundation/mpl-token-metadata';
+import {
+  getAccount as getTokenAccount,
+  getMint,
   Account as TokenAccount,
-  Mint as Mint,
+  Mint,
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
+import { Promo, DataV2, MetadataJson, AdminSettings, Promos, PromoExtendeds, UI } from '.';
+const camelcaseKeysDeep = require('camelcase-keys-deep');
 
-export class TokenMetadata {
+export class TokenMetadataProgram {
   readonly PUBKEY: PublicKey;
 
   readonly SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey;
@@ -78,7 +83,9 @@ export class TokenMetadata {
    */
   async fetchPlatformAddress(): Promise<PublicKey> {
     const [adminSettings] = await this.findAdminAddress();
-    const adminSettingsAccount = await this.program.account.adminSettings.fetch(adminSettings);
+    const adminSettingsAccount = (await this.program.account.adminSettings.fetch(
+      adminSettings,
+    )) as AdminSettings;
     return adminSettingsAccount.platform;
   }
 
@@ -201,7 +208,11 @@ export class TokenMetadata {
    *
    * @return Token account address
    */
-  async burnPromoToken(platform: PublicKey, mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+  async burnPromoToken(
+    platform: PublicKey,
+    mint: PublicKey,
+    promoOwner: Keypair,
+  ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
@@ -210,7 +221,7 @@ export class TokenMetadata {
         mint,
         promoOwner: promoOwner.publicKey,
         tokenAccount,
-        platform
+        platform,
       })
       .signers([promoOwner])
       .rpc();
@@ -219,11 +230,54 @@ export class TokenMetadata {
   }
 
   async getTokenAccount(address: PublicKey): Promise<TokenAccount> {
-    return await getAccount(this.program.provider.connection, address);
+    return await getTokenAccount(this.program.provider.connection, address);
   }
 
-  async getMint(address: PublicKey): Promise<Mint> {
-    return await getTokenMint(this.program.provider.connection, address);
+  async getMintAccount(address: PublicKey): Promise<Mint> {
+    return await getMint(this.program.provider.connection, address);
+  }
+
+  async getMetadataAccount(address: PublicKey): Promise<Metadata> {
+    return await Metadata.fromAccountAddress(this.program.provider.connection, address);
+  }
+
+  async getPromoExtended(promoAccountUI: UI<Promo>): Promise<PromoExtended> {
+    const [mintAccount, metadataAccount] = await Promise.all([
+      this.getMintAccount(promoAccountUI.mint),
+      this.getMetadataAccount(promoAccountUI.metadata),
+    ]);
+    const metadataJson = camelcaseKeysDeep(
+      await fetch(metadataAccount.data.uri).then((res) => {
+        return res.json();
+      }),
+    ) as MetadataJson;
+    return new PromoExtended(promoAccountUI, mintAccount, metadataAccount, metadataJson);
+  }
+
+  async getPromos(): Promise<Promos> {
+    const promoAccountUIs = (await this.program.account.promo.all()) as {
+      publicKey: PublicKey;
+      account: Promo;
+    }[];
+    return promoAccountUIs.reduce(
+      (promos, { publicKey, account }) => (
+        (promos[account.mint.toString()] = { publicKey, ...account }), promos
+      ),
+      {} as Promos,
+    );
+  }
+
+  async getPromoExtendeds(promos: Promos): Promise<PromoExtendeds> {
+    const results = await Promise.all(
+      Object.entries(promos).map(([_mint, promo]) => this.getPromoExtended(promo)),
+    );
+    return results.reduce(
+      (promoExtendeds, promoExtended) => (
+        (promoExtendeds[promoExtended.mintAccount.address.toString()] = promoExtended),
+        promoExtendeds
+      ),
+      {} as PromoExtendeds,
+    );
   }
 
   async findAssociatedTokenAccountAddress(
@@ -260,5 +314,37 @@ export class TokenMetadata {
       [Buffer.from(this.PROMO_PREFIX), mint.toBuffer()],
       this.PUBKEY,
     );
+  }
+}
+
+export class PromoExtended {
+  publicKey: PublicKey;
+  owner: PublicKey;
+  mintAccount: Mint;
+  metadataAccount: Metadata;
+  metadataJson: MetadataJson;
+  mints: number;
+  burns: number;
+  maxMint: number | null;
+  maxBurn: number | null;
+  expiry: Date | null;
+
+  constructor(
+    promoAccountUI: UI<Promo>,
+    mintAccount: Mint,
+    metadataAccount: Metadata,
+    metadataJson: MetadataJson,
+  ) {
+    this.publicKey = promoAccountUI.publicKey;
+    this.owner = promoAccountUI.owner;
+    this.mintAccount = mintAccount;
+    this.metadataAccount = metadataAccount;
+    this.metadataJson = metadataJson;
+    this.mints = promoAccountUI.mints;
+    this.burns = promoAccountUI.burns;
+    this.maxMint = promoAccountUI.maxMint;
+    this.maxBurn = promoAccountUI.maxBurn;
+    this.expiry =
+      promoAccountUI.expiry == null ? null : new Date(promoAccountUI.expiry.toNumber() * 1000);
   }
 }

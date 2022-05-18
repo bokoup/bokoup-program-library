@@ -2,9 +2,8 @@
 # Change mint to address of local test solana wallet address
 # Change bpf-program to be id from anchor program
 
-
 anchor build
-cargo build -p ppl-indexer
+cargo build -p bpl-indexer
 solana-test-validator \
 --reset \
 --ledger .anchor/test-ledger \

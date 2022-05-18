@@ -1,5 +1,6 @@
 import { BN } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
+import { PromoExtended } from '../';
 
 export type Network =
   | 'http://127.0.0.1:8899'
@@ -13,18 +14,26 @@ export type AdminSettings = {
 };
 
 export type UI<T> = T & {
-  key: PublicKey;
+  publicKey: PublicKey;
 };
 
 export type Promo = {
   owner: PublicKey;
   mint: PublicKey;
   metadata: PublicKey;
-  mints: number,
-  burns: number,
+  mints: number;
+  burns: number;
   maxMint: number | null;
   maxBurn: number | null;
   expiry: BN | null;
+};
+
+export type PromoExtendeds = {
+  [key: string]: PromoExtended;
+};
+
+export type Promos = {
+  [key: string]: UI<Promo>;
 };
 
 export type AccountBalance = {
@@ -77,9 +86,9 @@ export type MetadataJson = {
   description?: string;
   sellerFeeBasisPoints: number;
   image: string;
-  animationUrl: string;
-  externalUrl: string;
-  attributes: Attribute[];
+  animationUrl?: string;
+  externalUrl?: string;
+  attributes?: Attribute[];
   collection: {
     name: string;
     family: string;
