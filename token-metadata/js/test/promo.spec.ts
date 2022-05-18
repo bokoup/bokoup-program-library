@@ -5,14 +5,22 @@ import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
 const expect = chai.expect;
+import * as dotenv from 'dotenv';
+import path from "path";
 
 describe('promo', () => {
+  dotenv.config({ path: path.resolve(__dirname, '../../../demo/.env') });
+
+  console.log(path.resolve(__dirname, '.env'), new Uint8Array());
   const provider = anchor.AnchorProvider.env();
   // Configure the client to use the local cluster.
   anchor.setProvider(provider);
   const tokenMetadataProgram = new TokenMetadataProgram(provider);
-  const promoOwner = Keypair.generate();
-  const platform = Keypair.generate();
+  const promoOwner = Keypair.fromSecretKey(new Uint8Array(JSON.parse(process.env.REACT_APP_PROMO_OWNER_KEYPAIR!)));
+  const platform = Keypair.fromSecretKey(new Uint8Array(JSON.parse(process.env.REACT_APP_PLATFORM_KEYPAIR!)));
+  console.log("promoOwner: ", promoOwner.publicKey.toString());
+  console.log("platform: ", platform.publicKey.toString());
+
   let adminSettings: PublicKey;
   let adminSettingsAccount: AdminSettings;
   let promo: PublicKey;
