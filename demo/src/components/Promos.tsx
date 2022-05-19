@@ -93,7 +93,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                 {state.walletConnected ?
                     <CardActions sx={{ justifyContent: "center", mb: 2 }}>
                         <Button variant="contained" color="primary" onClick={handleClick}>
-                            LET'S GO!
+                            GET PROMO
                         </Button>
                     </CardActions> : null}
             </Card>

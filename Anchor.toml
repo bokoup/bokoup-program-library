@@ -2,7 +2,7 @@
 seeds = true
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 commitment = "confirmed"
 
