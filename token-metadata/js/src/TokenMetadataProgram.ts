@@ -162,7 +162,7 @@ export class TokenMetadataProgram {
    *
    * @return Address of promo account
    */
-  async mintPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+  async mintPromoToken(mint: PublicKey): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
@@ -170,9 +170,7 @@ export class TokenMetadataProgram {
       .accounts({
         mint,
         tokenAccount,
-        promoOwner: promoOwner.publicKey,
       })
-      .signers([promoOwner])
       .rpc();
 
     return tokenAccount;

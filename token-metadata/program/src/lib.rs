@@ -111,8 +111,8 @@ pub struct CreatePromo<'info> {
 pub struct MintPromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(mut, constraint = promo_owner.key() == promo.owner)]
-    pub promo_owner: Signer<'info>,
+    // #[account(mut, constraint = promo_owner.key() == promo.owner)]
+    // pub promo_owner: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK: pubkey checked via seeds

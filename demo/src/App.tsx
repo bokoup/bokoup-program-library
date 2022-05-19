@@ -4,12 +4,8 @@ import { WalletContext } from './components/Wallet';
 import DisconnectIcon from '@mui/icons-material/LinkOff';
 import Toolbar from '@mui/material/Toolbar';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import { WalletDisconnectButton, WalletMultiButton } from '@solana/wallet-adapter-material-ui';
 import React, { FC, Fragment, useContext, useEffect } from 'react';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
@@ -30,7 +26,7 @@ export const App: FC = () => {
 };
 
 export const Content: FC = () => {
-    const { state, dispatch } = useContext(Context);
+    const { state } = useContext(Context);
     return (
         <Fragment>
             <Toolbar style={{ display: 'flex' }}>

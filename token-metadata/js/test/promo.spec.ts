@@ -129,7 +129,7 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(promoAccount.mint, promoOwner)
+      .mintPromoToken(promoAccount.mint)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
