@@ -52,7 +52,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     const promoOwnerKeypair = getDemoKeypair(process.env.REACT_APP_PROMO_OWNER_KEYPAIR);
 
     async function handleClick() {
-        await state.program.mintPromoToken(promoExtended.mintAccount.address, promoOwnerKeypair)
+        await state.program.mintPromoToken(promoExtended.mintAccount.address)
             .then(() => Promise.all([
                 getPromoExtended(state, dispatch, promoExtended),
                 getTokenAccount(state, dispatch, promoExtended.mintAccount.address)
