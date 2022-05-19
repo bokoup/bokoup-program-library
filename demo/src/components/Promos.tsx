@@ -1,4 +1,4 @@
-import React, { FC, useContext, useMemo, memo, Fragment } from 'react';
+import React, { FC, useContext, Fragment } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -12,7 +12,7 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-import { Context, } from '../Store';
+import { Context, getDemoKeypair, getPromoExtended, getTokenAccount } from '../Store';
 import { Attribute } from '@bokoup/bpl-token-metadata'
 
 
@@ -49,17 +49,16 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         { "traitType": "owned", "value": tokenAccount ? Number(tokenAccount.amount) : 0 },
     ];
 
-    const Stats: FC<{ stats: Attribute[], title: string }> = ({ stats, title }) => {
-        return (
-            <Fragment>
-                <Typography sx={{ fontSize: 12 }} component="div">
-                    {title}
-                </Typography>
-                <Attributes attributes={stats} />
-                <Divider sx={{ pt: 1, mb: 1 }} />
-            </Fragment>
-        )
+    const promoOwnerKeypair = getDemoKeypair(process.env.REACT_APP_PROMO_OWNER_KEYPAIR);
+
+    async function handleClick() {
+        await state.program.mintPromoToken(promoExtended.mintAccount.address, promoOwnerKeypair)
+            .then(() => Promise.all([
+                getPromoExtended(state, dispatch, promoExtended),
+                getTokenAccount(state, dispatch, promoExtended.mintAccount.address)
+            ]));
     }
+
     return (
         <Grid item xs={12} md={6} lg={3}>
             <Card raised>
@@ -93,8 +92,8 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                 </CardContent>
                 {state.walletConnected ?
                     <CardActions sx={{ justifyContent: "center", mb: 2 }}>
-                        <Button variant="contained" color="primary">
-                            GET PROMO
+                        <Button variant="contained" color="primary" onClick={handleClick}>
+                            LET'S GO!
                         </Button>
                     </CardActions> : null}
             </Card>
@@ -112,6 +111,18 @@ export const PromoCards: FC = () => {
         </Grid>
     );
 };
+
+export const Stats: FC<{ stats: Attribute[], title: string }> = ({ stats, title }) => {
+    return (
+        <Fragment>
+            <Typography sx={{ fontSize: 12 }} component="div">
+                {title}
+            </Typography>
+            <Attributes attributes={stats} />
+            <Divider sx={{ pt: 1, mb: 1 }} />
+        </Fragment>
+    )
+}
 
 export const Attributes: FC<{ attributes: Attribute[] }> = ({ attributes }) => {
     return (

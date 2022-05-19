@@ -7,11 +7,9 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 import * as dotenv from 'dotenv';
 import path from "path";
+dotenv.config({ path: path.resolve(__dirname, '../../../demo/.env') });
 
 describe('promo', () => {
-  dotenv.config({ path: path.resolve(__dirname, '../../../demo/.env') });
-
-  console.log(path.resolve(__dirname, '.env'), new Uint8Array());
   const provider = anchor.AnchorProvider.env();
   // Configure the client to use the local cluster.
   anchor.setProvider(provider);

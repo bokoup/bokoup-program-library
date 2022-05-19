@@ -1,7 +1,8 @@
 import React, { createContext, useReducer, ReactNode, FC, useEffect, useMemo } from "react";
 import { Action, State, TokenAccounts } from './types/types'
 import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
-import { TokenMetadataProgram, AdminSettings, Network, PromoExtendeds, UI } from '@bokoup/bpl-token-metadata';
+import { Account as TokenAccount } from '@solana/spl-token';
+import { TokenMetadataProgram, AdminSettings, Network, PromoExtendeds, UI, Promo, PromoExtended } from '@bokoup/bpl-token-metadata';
 import { AnchorProvider, BN } from '@project-serum/anchor';
 import { Keypair, Transaction } from '@solana/web3.js';
 import { AnchorWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
@@ -37,8 +38,7 @@ const initialState: State = {
     program,
     adminSettings: initialAdminSettings,
     promoExtendeds: {} as PromoExtendeds,
-    tokenAccounts: {} as TokenAccounts
-
+    tokenAccounts: {} as TokenAccounts,
 }
 
 const Reducer = (state: State, action: Action): State => {
@@ -54,6 +54,17 @@ export async function getAdminSettings(state: State, dispatch: React.Dispatch<Ac
     dispatch({ adminSettings })
 }
 
+export async function getPromoExtended(state: State, dispatch: React.Dispatch<Action>, promoExtended: PromoExtended) {
+    let promoExtendeds = Object.assign({}, state.promoExtendeds);
+
+    const promoExtendedUpdated = await state.program.program.account.promo.fetch(promoExtended.publicKey)
+        .then(promoAccount => state.program.getPromoExtended({ publicKey: promoExtended.publicKey, ...promoAccount } as UI<Promo>));
+
+    promoExtendeds[promoExtendedUpdated.mintAccount.address.toString()] = promoExtendedUpdated;
+
+    dispatch({ promoExtendeds });
+}
+
 export async function getPromoExtendeds(state: State, dispatch: React.Dispatch<Action>) {
     const promoExtendeds = await state.program.getPromos().then(res => {
         return state.program.getPromoExtendeds(res)
@@ -61,12 +72,22 @@ export async function getPromoExtendeds(state: State, dispatch: React.Dispatch<A
     dispatch({ promoExtendeds })
 }
 
+export async function getTokenAccount(state: State, dispatch: React.Dispatch<Action>, mint: PublicKey) {
+    let tokenAccounts = Object.assign({}, state.tokenAccounts);
+
+    let tokenAccount = await state.program.findAssociatedTokenAccountAddress(mint, state.wallet.publicKey)
+        .then(([address]) => state.program.getTokenAccount(address))
+        .catch(() => null);
+
+    tokenAccounts[mint.toString()] = tokenAccount;
+    dispatch({ tokenAccounts });
+}
+
 export async function getTokenAccounts(state: State, dispatch: React.Dispatch<Action>) {
     const results = await Promise.all(Object.keys(state.promoExtendeds).map(mintString => state.program.findAssociatedTokenAccountAddress(new PublicKey(mintString), state.wallet.publicKey)
-        .then(([address]) => { return state.program.getTokenAccount(address) })
-        .catch(() => { return null })
+        .then(([address]) => state.program.getTokenAccount(address))
+        .catch(() => null)
     ));
-    console.log(results);
 
     const tokenAccounts: TokenAccounts = Object.keys(state.promoExtendeds).reduce(
         (tokenAccounts, mintString, i) => (
@@ -76,6 +97,12 @@ export async function getTokenAccounts(state: State, dispatch: React.Dispatch<Ac
         {} as TokenAccounts,
     );
     dispatch({ tokenAccounts })
+}
+
+
+
+export function getDemoKeypair(secretKeyString: string): Keypair {
+    return Keypair.fromSecretKey(new Uint8Array(JSON.parse(secretKeyString)))
 }
 
 const Store: FC<{ children: ReactNode }> = ({ children }) => {

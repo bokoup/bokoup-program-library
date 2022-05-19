@@ -18,6 +18,13 @@
         "family": "genesis"
     },
     "properties": {
-        "category": "image"
-    }
+        "category": "image",
+        "files": [
+            {
+                "uri": "https://arweave.net/_b6edvf2INBC7ByJ-DAlbVruhWbJwcSXBLWl9FIA6zo",
+                "type": "image/png"
+            }
+        ]
+    },
+    "image": "https://arweave.net/_b6edvf2INBC7ByJ-DAlbVruhWbJwcSXBLWl9FIA6zo"
 }
