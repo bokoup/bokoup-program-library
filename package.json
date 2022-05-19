@@ -4,13 +4,14 @@
     "version": "0.1.0",
     "description": "Programs for coupons, promotional offers and loyalty tokens on the Solana blockchain.",
     "scripts": {
-        "build:token-metadata": "lerna run build --scope @bokoup/bpl-token-metadata",
+        "build": "anchor build && lerna run build --scope @bokoup/bpl-token-metadata && lerna run update:tm --scope @bokoup/bpl-demo",
         "test": "lerna run --parallel test",
         "lint": "lerna run --parallel lint",
         "fix": "lerna run --parallel fix"
     },
     "workspaces": [
-        "token-metadata/js"
+        "token-metadata/js",
+        "demo"
     ],
     "repository": "git@github.com:bokoup/bokoup-program-library.git",
     "author": "Bokoup Maintainers <info@bokoup.so>",

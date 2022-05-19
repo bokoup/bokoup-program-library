@@ -1,0 +1,85 @@
+{
+    "name": "@bokoup/bpl-demo",
+    "version": "0.1.0",
+    "license": "Apache-2.0",
+    "homepage": "https://github.com/bokoup/bokoup-program-library",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bokoup/bokoup-program-library"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "src",
+        ".editorconfig",
+        ".eslintignore",
+        ".eslintrc.json",
+        ".gitignore",
+        ".prettierignore",
+        ".prettierrc",
+        "LICENSE",
+        "package.json",
+        "tsconfig.json"
+    ],
+    "scripts": {
+        "clean": "shx rm -rf dist .parcel-cache",
+        "build": "yarn clean && parcel build src/index.html",
+        "start": "yarn clean && parcel src/index.html",
+        "fmt": "prettier --write '{*,**/*}.{js,ts,jsx,tsx,json}'",
+        "lint": "eslint . && prettier --check '{*,**/*}.{js,ts,jsx,tsx,json}'",
+        "lint:fix": "eslint --fix . && yarn fmt",
+        "nuke": "shx rm -rf node_modules yarn.lock",
+        "anchor:test:start": "anchor test --skip-local-validator && yarn start",
+        "anchor:seed:start": "anchor run test_seed && yarn start",
+        "predeploy": "yarn clean && parcel build src/index.html --public-url https://bokoup.github.io/bokoup-program-library --no-scope-hoist",
+        "deploy": "gh-pages -d dist",
+        "update:tm": "rimraf node_modules/@bokoup && yarn add ./token-metadata/js --check-files"
+    },
+    "dependencies": {
+        "@bokoup/bpl-token-metadata": "./token-metadata/js",
+        "@emotion/react": "^11.8.2",
+        "@emotion/styled": "^11.0.0",
+        "@metaplex-foundation/mpl-core": "^0.6.1",
+        "@metaplex-foundation/mpl-token-metadata": "^2.1.2",
+        "@mui/icons-material": "^5.8.0",
+        "@mui/material": "^5.8.0",
+        "@project-serum/anchor": "^0.24.2",
+        "@solana/spl-token": "^0.2.0",
+        "@solana/wallet-adapter-base": "^0.9.5",
+        "@solana/wallet-adapter-material-ui": "^0.16.5",
+        "@solana/wallet-adapter-react": "^0.15.4",
+        "@solana/wallet-adapter-wallets": "^0.16.1",
+        "@solana/web3.js": "^1.42.0",
+        "@types/react-copy-to-clipboard": "^5.0.2",
+        "gh-pages": "^4.0.0",
+        "notistack": "^2.0.5",
+        "react": "^18.1.0",
+        "react-copy-to-clipboard": "^5.1.0",
+        "react-dom": "^18.1.0"
+    },
+    "devDependencies": {
+        "@types/eslint": "^8.4.2",
+        "@types/eslint-plugin-prettier": "^3.1.0",
+        "@types/node": "^17.0.34",
+        "@types/prettier": "^2.6.1",
+        "@types/react": "^18.0.9",
+        "@types/react-dom": "^18.0.4",
+        "@typescript-eslint/eslint-plugin": "^5.24.0",
+        "@typescript-eslint/parser": "^5.24.0",
+        "crypto-browserify": "^3.12.0",
+        "eslint": "^8.15.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "eslint-plugin-react": "^7.29.4",
+        "eslint-plugin-react-hooks": "^4.5.0",
+        "parcel": "^2.5.0",
+        "prettier": "^2.6.2",
+        "shx": "^0.3.4",
+        "tslib": "^2.4.0",
+        "typescript": "^4.6.4"
+    },
+    "alias": {
+        "process": false
+    }
+}

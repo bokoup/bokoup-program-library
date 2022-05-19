@@ -1,43 +1,62 @@
 import * as anchor from '@project-serum/anchor';
-import { AdminSettings, TokenMetadata } from '../src';
-import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
-import { Promo, DataV2 } from '../src';
-import { PublicKey, Keypair } from '@solana/web3.js';
+import { TokenMetadataProgram, AdminSettings, DataV2, Promo, PromoExtended } from '../src';
+import { PublicKey, Keypair, Transaction } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
 const expect = chai.expect;
+import * as dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../demo/.env') });
 
 describe('promo', () => {
   const provider = anchor.AnchorProvider.env();
   // Configure the client to use the local cluster.
   anchor.setProvider(provider);
-  const tokenMetadata = new TokenMetadata(provider);
-  const promoOwner = Keypair.generate();
-  const platform = Keypair.generate();
+  const tokenMetadataProgram = new TokenMetadataProgram(provider);
+  const promoOwner = Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(process.env.REACT_APP_PROMO_OWNER_KEYPAIR!)),
+  );
+  const platform = Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(process.env.REACT_APP_PLATFORM_KEYPAIR!)),
+  );
+  console.log('promoOwner: ', promoOwner.publicKey.toString());
+  console.log('platform: ', platform.publicKey.toString());
+
   let adminSettings: PublicKey;
   let adminSettingsAccount: AdminSettings;
   let promo: PublicKey;
   let promoAccount: Promo;
-  let metadataAccount: Metadata;
+  let promoExtended: PromoExtended;
 
   it('funds accounts', async () => {
-    await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(platform.publicKey, 2_000_000_000),
-      'confirmed',
+    const amount = 2_000_000_000;
+    const transaction = new Transaction();
+    const addresses = [platform.publicKey, promoOwner.publicKey];
+    addresses.forEach((address) => {
+      transaction.add(
+        anchor.web3.SystemProgram.transfer({
+          fromPubkey: tokenMetadataProgram.payer.publicKey,
+          lamports: 2_000_000_000,
+          toPubkey: address,
+        }),
+      );
+    });
+    await provider.sendAndConfirm(transaction);
+    const accountInfos = await Promise.all(
+      addresses.map((address) => provider.connection.getAccountInfo(address)),
     );
-    await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(promoOwner.publicKey, 2_000_000_000),
-      'confirmed',
-    );
+    accountInfos.map((account) => {
+      expect(account!.lamports).to.equal(amount, 'Platform lamports incorrect.');
+    });
   });
 
   it('creates admin settings', async () => {
-    [adminSettings] = await tokenMetadata.findAdminAddress();
+    [adminSettings] = await tokenMetadataProgram.findAdminAddress();
 
-    await tokenMetadata.createAdminSettings(platform, 10_000_000, 1_000_000);
+    await tokenMetadataProgram.createAdminSettings(platform, 10_000_000, 1_000_000);
 
-    adminSettingsAccount = (await tokenMetadata.program.account.adminSettings.fetch(
+    adminSettingsAccount = (await tokenMetadataProgram.program.account.adminSettings.fetch(
       adminSettings,
     )) as AdminSettings;
     expect(adminSettingsAccount.platform.toString()).to.equal(
@@ -46,62 +65,78 @@ describe('promo', () => {
     );
   });
 
-  it('Creates a promo', async () => {
-    const metadataData: DataV2 = {
-      name: 'Promotion #0',
-      symbol: '42',
-      uri: 'https://bokoup.so',
+  it('Creates two promos', async () => {
+    const metadataData1: DataV2 = {
+      name: 'Promo 1',
+      symbol: 'P1',
+      uri: 'https://arweave.net/xBvsyd4Y1z_LZS-WmjikbING1DApVWEfWHRQ2lym0GE',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,
       uses: null,
     };
 
-    const platformStartAccountInfo = await tokenMetadata.program.provider.connection.getAccountInfo(
-      adminSettingsAccount.platform,
-    );
+    const metadataData2: DataV2 = {
+      name: 'Promo 2',
+      symbol: 'P2',
+      uri: 'https://arweave.net/jCbvPYBPEbJbc4_VBrnWm5X1-_eoSA2XOn96OngRtew',
+      sellerFeeBasisPoints: 0,
+      creators: null,
+      collection: null,
+      uses: null,
+    };
 
-    const maxMint = 1_000;
-    const maxRedeem = 1;
-    const expiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10);
+    for (const metadataData of [metadataData1, metadataData2] as DataV2[]) {
+      const platformStartAccountInfo =
+        await tokenMetadataProgram.program.provider.connection.getAccountInfo(
+          adminSettingsAccount.platform,
+        );
 
-    promo = await tokenMetadata.createPromo(
-      adminSettingsAccount.platform,
-      metadataData,
-      true,
-      maxMint,
-      maxRedeem,
-      expiry,
-      promoOwner,
-    );
+      const maxMint = 1_000;
+      const maxRedeem = 500;
+      const expiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10);
 
-    promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
-    console.log("promoAccount: ", promoAccount);
-
-    metadataAccount = await Metadata.fromAccountAddress(provider.connection, promoAccount.metadata);
-    console.log("metadataAccount: ", metadataAccount);
-
-    const platformAccountInfo = await tokenMetadata.program.provider.connection.getAccountInfo(
-      adminSettingsAccount.platform,
-    );
-    if (platformStartAccountInfo !== null && platformAccountInfo !== null) {
-      expect(platformAccountInfo.lamports).to.equal(
-        platformStartAccountInfo.lamports + adminSettingsAccount.createPromoLamports.toNumber(),
-        'Platform lamports incorrect.',
+      promo = await tokenMetadataProgram.createPromo(
+        adminSettingsAccount.platform,
+        metadataData,
+        true,
+        maxMint,
+        maxRedeem,
+        expiry,
+        promoOwner,
       );
+
+      promoAccount = (await tokenMetadataProgram.program.account.promo.fetch(promo)) as Promo;
+
+      promoExtended = await tokenMetadataProgram.getPromoExtended({
+        publicKey: promo,
+        ...promoAccount,
+      });
+      console.log('promoExtended: ', promoExtended);
+
+      const platformAccountInfo =
+        await tokenMetadataProgram.program.provider.connection.getAccountInfo(
+          adminSettingsAccount.platform,
+        );
+      if (platformStartAccountInfo !== null && platformAccountInfo !== null) {
+        expect(platformAccountInfo.lamports).to.equal(
+          platformStartAccountInfo.lamports + adminSettingsAccount.createPromoLamports.toNumber(),
+          'Platform lamports incorrect.',
+        );
+      }
     }
   });
 
   it('Mints a promo token', async () => {
-    const [tokenAccountAccount, mintAccount] = await tokenMetadata
+    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
       .mintPromoToken(promoAccount.mint, promoOwner)
       .then((tokenAccount) =>
         Promise.all([
-          tokenMetadata.getTokenAccount(tokenAccount),
-          tokenMetadata.getMint(promoAccount.mint),
+          tokenMetadataProgram.getTokenAccount(tokenAccount),
+          tokenMetadataProgram.getMintAccount(promoExtended.mintAccount.address),
         ]),
       );
-    promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
+    promoAccount = (await tokenMetadataProgram.program.account.promo.fetch(promo)) as Promo;
 
     expect(Number(tokenAccountAccount.amount)).to.equal(1, 'Token account amount incorrect.');
     expect(Number(mintAccount.supply)).to.equal(1, 'Mint supply incorrect.');
@@ -112,26 +147,41 @@ describe('promo', () => {
   });
 
   it('Delegates a promo token', async () => {
-    const tokenAccountAccount = await tokenMetadata
+    const tokenAccountAccount = await tokenMetadataProgram
       .delegatePromoToken(promo, promoAccount.mint)
-      .then((tokenAccount) =>
-        tokenMetadata.getTokenAccount(tokenAccount)
-      );
+      .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
   });
 
   it('Burns a promo token', async () => {
-    const [tokenAccountAccount, mintAccount] = await tokenMetadata
-      .burnPromoToken(promoAccount.mint, promoOwner)
+    const platformStartAccountInfo =
+      await tokenMetadataProgram.program.provider.connection.getAccountInfo(
+        adminSettingsAccount.platform,
+      );
+
+    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
+      .burnPromoToken(platform.publicKey, promoAccount.mint, promoOwner)
       .then((tokenAccount) =>
         Promise.all([
-          tokenMetadata.getTokenAccount(tokenAccount),
-          tokenMetadata.getMint(promoAccount.mint),
+          tokenMetadataProgram.getTokenAccount(tokenAccount),
+          tokenMetadataProgram.getMintAccount(promoAccount.mint),
         ]),
       );
-    promoAccount = (await tokenMetadata.program.account.promo.fetch(promo)) as Promo;
+
+    promoAccount = (await tokenMetadataProgram.program.account.promo.fetch(promo)) as Promo;
     expect(Number(tokenAccountAccount.amount)).to.equal(0, 'Token account amount incorrect.');
     expect(Number(mintAccount.supply)).to.equal(0, 'Mint supply incorrect.');
     expect(promoAccount.burns).to.equal(1, 'Promo burns incorrect.');
+
+    const platformAccountInfo =
+      await tokenMetadataProgram.program.provider.connection.getAccountInfo(
+        adminSettingsAccount.platform,
+      );
+    if (platformStartAccountInfo !== null && platformAccountInfo !== null) {
+      expect(platformAccountInfo.lamports).to.equal(
+        platformStartAccountInfo.lamports + adminSettingsAccount.burnPromoTokenLamports.toNumber(),
+        'Platform lamports incorrect.',
+      );
+    }
   });
 });

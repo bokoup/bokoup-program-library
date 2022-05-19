@@ -1,2 +1,2 @@
-export * from './TokenMetadata';
-export * from './types';
+export * from './TokenMetadataProgram';
+export * from './types/types';
