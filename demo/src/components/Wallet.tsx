@@ -1,14 +1,14 @@
 import { WalletAdapterNetwork, WalletError } from '@solana/wallet-adapter-base';
-import { WalletDialogProvider, WalletMultiButton } from '@solana/wallet-adapter-material-ui';
+import { WalletDialogProvider } from '@solana/wallet-adapter-material-ui';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import {
-    LedgerWalletAdapter,
     PhantomWalletAdapter,
-    SlopeWalletAdapter,
-    SolflareWalletAdapter,
-    SolletExtensionWalletAdapter,
-    SolletWalletAdapter,
-    TorusWalletAdapter,
+    // LedgerWalletAdapter,
+    // SlopeWalletAdapter,
+    // SolflareWalletAdapter,
+    // SolletExtensionWalletAdapter,
+    // SolletWalletAdapter,
+    // TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import { useSnackbar } from 'notistack';
@@ -54,4 +54,3 @@ export const WalletContext: FC<{ children: ReactNode }> = ({ children }) => {
         </ConnectionProvider>
     );
 };
-

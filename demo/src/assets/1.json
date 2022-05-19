@@ -1,1 +1,19 @@
-{"name":"Promo 2","symbol":"P2","description":"Buy 1 Glass, Get 1 Free","seller_fee_basis_points":0,"attributes":[{"trait_type":"uses","value":"1"},{"trait_type":"transferrable","value":"yes"}],"collection":{"name":"bokoup","family":"genesis"},"properties":{"category":"image","files":[{"uri":"https://arweave.net/Pta0ZLrhilJlGkvfDQGRsARoZXAcvYkh-FZLmYrWlZM","type":"image/png"},{"uri":"https://arweave.net/5AyZWod8j46x6ie6kEYxLd8ywubbt5sXvWXTLpIe3ac","type":"image/png"}]},"image":"https://arweave.net/5AyZWod8j46x6ie6kEYxLd8ywubbt5sXvWXTLpIe3ac"}
+{
+    "name": "Promo 2",
+    "symbol": "P2",
+    "description": "Buy 1 Glass, Get 1 Free",
+    "seller_fee_basis_points": 0,
+    "attributes": [
+        { "trait_type": "uses", "value": "1" },
+        { "trait_type": "transferrable", "value": "yes" }
+    ],
+    "collection": { "name": "bokoup", "family": "genesis" },
+    "properties": {
+        "category": "image",
+        "files": [
+            { "uri": "https://arweave.net/Pta0ZLrhilJlGkvfDQGRsARoZXAcvYkh-FZLmYrWlZM", "type": "image/png" },
+            { "uri": "https://arweave.net/5AyZWod8j46x6ie6kEYxLd8ywubbt5sXvWXTLpIe3ac", "type": "image/png" }
+        ]
+    },
+    "image": "https://arweave.net/5AyZWod8j46x6ie6kEYxLd8ywubbt5sXvWXTLpIe3ac"
+}

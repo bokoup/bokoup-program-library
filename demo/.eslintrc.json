@@ -10,12 +10,7 @@
         "plugin:react-hooks/recommended"
     ],
     "parser": "@typescript-eslint/parser",
-    "plugins": [
-        "@typescript-eslint",
-        "prettier",
-        "react",
-        "react-hooks"
-    ],
+    "plugins": ["@typescript-eslint", "prettier", "react", "react-hooks"],
     "settings": {
         "react": {
             "version": "detect"
@@ -30,16 +25,15 @@
             {
                 "argsIgnorePattern": "^_",
                 "varsIgnorePattern": "^_",
-                "caughtErrorsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
             }
         ],
         "react/no-unescaped-entities": [
             "error",
             {
-                "forbid": [
-                    ">"
-                ]
+                "forbid": [">"]
             }
-        ]
+        ],
+        "@typescript-eslint/no-var-requires": "off"
     }
 }
