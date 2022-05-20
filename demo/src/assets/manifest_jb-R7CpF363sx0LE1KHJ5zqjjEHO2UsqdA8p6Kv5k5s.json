@@ -1,0 +1,31 @@
+{
+    "0.json": {
+        "id": "Pn9XsLMF64_-gSgoSk_lDpRwLWSej6a73FMyqLWoNnk",
+        "files": [
+            {
+                "uri": "https://arweave.net/Pn9XsLMF64_-gSgoSk_lDpRwLWSej6a73FMyqLWoNnk",
+                "type": "application/json"
+            },
+            {
+                "uri": "https://arweave.net/jb-R7CpF363sx0LE1KHJ5zqjjEHO2UsqdA8p6Kv5k5s/0.json",
+                "type": "application/json"
+            }
+        ]
+    },
+    "1.json": {
+        "id": "DqOeFgoVi6H2fAN3zDNpaVvSjkAIn6VpTC4D7yZijV4",
+        "files": [
+            {
+                "uri": "https://arweave.net/DqOeFgoVi6H2fAN3zDNpaVvSjkAIn6VpTC4D7yZijV4",
+                "type": "application/json"
+            },
+            {
+                "uri": "https://arweave.net/jb-R7CpF363sx0LE1KHJ5zqjjEHO2UsqdA8p6Kv5k5s/1.json",
+                "type": "application/json"
+            }
+        ]
+    },
+    "donut.png": "https://arweave.net/jfCi6HScKR7ZeQPlDUr3_4G8tDxqGru7TCFz5llTccY",
+    "blob.png": "https://arweave.net/zbq5evb3l5LhdmGKbi4Chc-TEp3W3YRyNtfyBGJ0n4g",
+    "infinity.png": "https://arweave.net/UMZQXZuV4RzaTjiXyawVPI3JdaAgVDdK1FnbnlpIGjc"
+}

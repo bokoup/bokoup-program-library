@@ -10,7 +10,7 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import { Context, Store } from './Store';
 import { PromoCards } from './components/Promos';
-const logo = require('./assets/logo.png');
+import { Shop } from './components/Shop';
 
 export const App: FC = () => {
     return (
@@ -29,7 +29,6 @@ export const Content: FC = () => {
     return (
         <Fragment>
             <Toolbar style={{ display: 'flex' }}>
-                <Box sx={{ height: 40, width: 40, mr: 1 }} component="img" alt="bokoup logo" src={logo} />
                 <Typography component="h1" variant="h6" style={{ flexGrow: 1 }}>
                     bokoup
                 </Typography>
@@ -40,7 +39,12 @@ export const Content: FC = () => {
             </Toolbar>
             <Container maxWidth="xl">
                 <Grid container spacing={4} justifyContent="center">
-                    <PromoCards />
+                    <Grid item container spacing={4} xs={12} lg={6} justifyContent="center">
+                        <PromoCards />
+                    </Grid>
+                    <Grid item container spacing={4} xs={12} lg={6} alignItems="stretch">
+                        <Shop />
+                    </Grid>
                 </Grid>
             </Container>
         </Fragment>

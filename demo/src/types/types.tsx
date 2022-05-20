@@ -12,6 +12,7 @@ export type State = {
     adminSettings: UI<AdminSettings>;
     promoExtendeds: PromoExtendeds;
     tokenAccounts: TokenAccounts;
+    products: Products;
 };
 
 export type Action =
@@ -21,8 +22,23 @@ export type Action =
     | { program: State['program'] }
     | { adminSettings: State['adminSettings'] }
     | { promoExtendeds: State['promoExtendeds'] }
-    | { tokenAccounts: State['tokenAccounts'] };
+    | { tokenAccounts: State['tokenAccounts'] }
+    | { products: State['products'] };
 
 export type TokenAccounts = {
     [key: string]: TokenAccount | null;
 };
+
+export type Products = {
+    [key: string]: Product;
+};
+
+export type Product = {
+    name: string,
+    description: string,
+    src: '*.png',
+    price: number,
+    quantity: number,
+    total: number,
+};
+

@@ -69,7 +69,7 @@ describe('promo', () => {
     const metadataData1: DataV2 = {
       name: 'Promo 1',
       symbol: 'P1',
-      uri: 'https://arweave.net/xBvsyd4Y1z_LZS-WmjikbING1DApVWEfWHRQ2lym0GE',
+      uri: 'https://arweave.net/Pn9XsLMF64_-gSgoSk_lDpRwLWSej6a73FMyqLWoNnk',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,
@@ -79,7 +79,7 @@ describe('promo', () => {
     const metadataData2: DataV2 = {
       name: 'Promo 2',
       symbol: 'P2',
-      uri: 'https://arweave.net/jCbvPYBPEbJbc4_VBrnWm5X1-_eoSA2XOn96OngRtew',
+      uri: 'https://arweave.net/DqOeFgoVi6H2fAN3zDNpaVvSjkAIn6VpTC4D7yZijV4',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,

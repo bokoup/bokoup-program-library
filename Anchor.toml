@@ -10,7 +10,7 @@ commitment = "confirmed"
 members = ["token-metadata/program"]
 
 [programs.localnet]
-bpl_token_metadata = "CsmkSwyBPpihA6qiNGKtWR3DV6RNxJKBo4xBMPt414Eq"
+bpl_token_metadata = "3rgtdHtt9gMsmcpjFQDzdFvU6BsuSjbb2oYcoy78kDQB"
 
 [scripts]
 test = "yarn run ts-mocha -p token-metadata/js/tsconfig.json -t 1000000 token-metadata/js/test/promo.spec.ts"

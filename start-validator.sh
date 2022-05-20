@@ -10,7 +10,7 @@ solana-test-validator \
 --mint 61mVTaw6hBtwWnSaGXRSJePFWEQqipeCka3evytEVNUp \
 --bind-address 0.0.0.0 \
 --bpf-program \
-    CsmkSwyBPpihA6qiNGKtWR3DV6RNxJKBo4xBMPt414Eq \
+    3rgtdHtt9gMsmcpjFQDzdFvU6BsuSjbb2oYcoy78kDQB \
     target/deploy/bpl_token_metadata.so \
 --clone metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s \
 --clone PwDiXFxQsGra4sFFTT8r1QWRMd4vfumiWC1jfWNfdYT \

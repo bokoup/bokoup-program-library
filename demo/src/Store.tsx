@@ -1,5 +1,6 @@
 import React, { createContext, useReducer, ReactNode, FC, useEffect, useMemo } from 'react';
 import { Action, State, TokenAccounts } from './types/types';
+import { initialProducts } from './components/Shop';
 import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
 import {
     TokenMetadataProgram,
@@ -31,7 +32,7 @@ export const dummyWallet: AnchorWallet = {
         return [] as Transaction[];
     },
 };
-const network = process.env.REACT_APP_NETWORK_URL as Network;
+const network = process.env.REACT_APP_NETWORK_URL as Network || 'https://api.devnet.solana.com' as Network;
 const connection = new Connection(network, confirmOptions);
 const provider = new AnchorProvider(connection, dummyWallet, confirmOptions);
 const program = new TokenMetadataProgram(provider);
@@ -51,6 +52,7 @@ const initialState: State = {
     adminSettings: initialAdminSettings,
     promoExtendeds: {} as PromoExtendeds,
     tokenAccounts: {} as TokenAccounts,
+    products: initialProducts
 };
 
 const Reducer = (state: State, action: Action): State => {

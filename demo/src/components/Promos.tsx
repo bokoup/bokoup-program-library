@@ -62,7 +62,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     }
 
     return (
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item sm={6}>
             <Card raised>
                 <CardHeader
                     title={promoExtended.metadataAccount.data.name}
@@ -70,7 +70,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                         <Link
                             sx={{ fontSize: 12, fontWeight: 'medium' }}
                             underline="hover"
-                            color="primary.light"
+                            color="secondary.light"
                             href={getExplorerLink(mintString)}
                             target="_blank"
                         >
@@ -95,13 +95,11 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     <Stats stats={stats} title={'STATS'} />
                     {state.walletConnected ? <Stats stats={myStats} title="MY PROMOS" /> : null}
                 </CardContent>
-                {state.walletConnected ? (
-                    <CardActions sx={{ justifyContent: 'center', mb: 2 }}>
-                        <Button variant="contained" color="primary" onClick={handleClick}>
-                            GET PROMO
-                        </Button>
-                    </CardActions>
-                ) : null}
+                <CardActions sx={{ justifyContent: 'center', mb: 2 }}>
+                    <Button variant="contained" disabled={!state.walletConnected} color="primary" onClick={handleClick}>
+                        GET PROMO
+                    </Button>
+                </CardActions>
             </Card>
         </Grid>
     );
