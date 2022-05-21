@@ -1,6 +1,6 @@
 import React, { createContext, useReducer, ReactNode, FC, useEffect, useMemo } from 'react';
-import { Action, State, TokenAccounts } from './types/types';
-import { initialProducts } from './components/Shop';
+import { Action, State, TokenAccounts, } from './types/types';
+import { initialProducts, initialShopTotal, getShopTotal } from './components/Shop';
 import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
 import {
     TokenMetadataProgram,
@@ -32,7 +32,7 @@ export const dummyWallet: AnchorWallet = {
         return [] as Transaction[];
     },
 };
-const network = process.env.REACT_APP_NETWORK_URL as Network || 'https://api.devnet.solana.com' as Network;
+const network = process.env.REACT_APP_NETWORK_URL as Network;
 const connection = new Connection(network, confirmOptions);
 const provider = new AnchorProvider(connection, dummyWallet, confirmOptions);
 const program = new TokenMetadataProgram(provider);
@@ -52,7 +52,8 @@ const initialState: State = {
     adminSettings: initialAdminSettings,
     promoExtendeds: {} as PromoExtendeds,
     tokenAccounts: {} as TokenAccounts,
-    products: initialProducts
+    products: initialProducts,
+    shopTotal: initialShopTotal
 };
 
 const Reducer = (state: State, action: Action): State => {
@@ -123,21 +124,19 @@ export function getDemoKeypair(secretKeyString: string): Keypair {
 }
 
 const Store: FC<{ children: ReactNode }> = ({ children }) => {
+    console.log("renderStore");
     const [state, dispatch] = useReducer(Reducer, initialState);
 
-    const wallet = useAnchorWallet();
+    let wallet = useAnchorWallet();
     useEffect(() => {
         dispatch({ wallet: wallet ? wallet : dummyWallet, walletConnected: wallet ? true : false });
     }, [wallet]);
-
-    useMemo(() => {
-        getTokenAccounts(state, dispatch);
-    }, [state.wallet]);
 
     useEffect(() => {
         const connection = new Connection(state.network, confirmOptions);
         dispatch({ connection });
     }, [state.network]);
+
 
     useEffect(() => {
         let provider = new AnchorProvider(state.connection, dummyWallet, confirmOptions);
@@ -147,12 +146,25 @@ const Store: FC<{ children: ReactNode }> = ({ children }) => {
         }
         const program = new TokenMetadataProgram(provider);
         dispatch({ program });
-    }, [state.wallet]);
+
+        getTokenAccounts(state, dispatch);
+    }, [state.walletConnected]);
+
+    useEffect(() => {
+        getShopTotal(state, dispatch);
+        getTokenAccounts(state, dispatch);
+    }, [state.walletConnected]);
+
+    useEffect(() => {
+        // getTokenAccounts(state, dispatch);
+        getShopTotal(state, dispatch);
+    }, [state.products, state.tokenAccounts]);
 
     useMemo(() => {
         getAdminSettings(state, dispatch);
         getPromoExtendeds(state, dispatch);
         getTokenAccounts(state, dispatch);
+        getShopTotal(state, dispatch);
     }, []);
 
     return <Context.Provider value={{ state, dispatch }}>{children}</Context.Provider>;

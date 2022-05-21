@@ -25,10 +25,10 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         switch (state.network) {
             case 'http://127.0.0.1:8899':
                 link = `${baseUrl}/${address}?cluster=custom&customUrl=${encodeURIComponent(state.network)}`;
-            /* falls through */
+                break
             case 'https://api.devnet.solana.com':
                 link = `${baseUrl}/${address}?cluster=devnet`;
-            /* falls through */
+                break
             default:
                 link = `${baseUrl}/${address}?cluster=devnet`;
         }
@@ -41,9 +41,9 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         { traitType: 'supply', value: Number(promoExtended.mintAccount.supply) },
         { traitType: 'minted', value: promoExtended.mints },
         { traitType: 'burned', value: promoExtended.burns },
-        { traitType: 'maxMint', value: promoExtended.maxMint },
-        { traitType: 'maxBurn', value: promoExtended.maxBurn },
-        { traitType: 'expiry', value: promoExtended.expiry.toISOString().split('T')[0] },
+        { traitType: 'maxMint', value: promoExtended.maxMint! },
+        { traitType: 'maxBurn', value: promoExtended.maxBurn! },
+        { traitType: 'expiry', value: promoExtended.expiry!.toISOString().split('T')[0] },
     ];
 
     const myStats: Attribute[] = [{ traitType: 'owned', value: tokenAccount ? Number(tokenAccount.amount) : 0 }];
@@ -59,7 +59,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     getTokenAccount(state, dispatch, promoExtended.mintAccount.address),
                 ])
             );
-    }
+    };
 
     return (
         <Grid item sm={6}>
@@ -90,7 +90,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     <Typography sx={{ fontSize: 12 }} component="div">
                         FEATURES
                     </Typography>
-                    <Attributes attributes={promoExtended.metadataJson.attributes} />
+                    <Attributes attributes={promoExtended.metadataJson.attributes as Attribute[]} />
                     <Divider sx={{ pt: 1, mb: 1 }} />
                     <Stats stats={stats} title={'STATS'} />
                     {state.walletConnected ? <Stats stats={myStats} title="MY PROMOS" /> : null}
@@ -106,6 +106,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
 };
 
 export const PromoCards: FC = () => {
+    console.log("renderPromoCards");
     const { state } = useContext(Context);
     const promoCards = Object.entries(state.promoExtendeds).map(([mintString], i) => (
         <PromoCard key={i} mintString={mintString} />

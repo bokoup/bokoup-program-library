@@ -1,4 +1,4 @@
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { Account as TokenAccount } from '@solana/spl-token';
 import { AnchorWallet } from '@solana/wallet-adapter-react';
 import { UI, Network, AdminSettings, PromoExtendeds, TokenMetadataProgram } from '@bokoup/bpl-token-metadata';
@@ -13,6 +13,7 @@ export type State = {
     promoExtendeds: PromoExtendeds;
     tokenAccounts: TokenAccounts;
     products: Products;
+    shopTotal: ShopTotal;
 };
 
 export type Action =
@@ -23,7 +24,8 @@ export type Action =
     | { adminSettings: State['adminSettings'] }
     | { promoExtendeds: State['promoExtendeds'] }
     | { tokenAccounts: State['tokenAccounts'] }
-    | { products: State['products'] };
+    | { products: State['products'] }
+    | { shopTotal: State['shopTotal'] };
 
 export type TokenAccounts = {
     [key: string]: TokenAccount | null;
@@ -42,3 +44,20 @@ export type Product = {
     total: number,
 };
 
+export type ShopTotal = {
+    quantity: number,
+    subtotal: number,
+    discount: number;
+    total: number,
+    shopPromos: ShopPromos
+};
+
+export type ShopPromo = {
+    mint: PublicKey,
+    discount: number,
+    applied: number
+}
+
+export type ShopPromos = {
+    [key: string]: ShopPromo;
+};

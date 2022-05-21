@@ -5,7 +5,7 @@ import { PromoExtended } from '../';
 export type Network =
   | 'http://127.0.0.1:8899'
   | 'https://api.devnet.solana.com'
-  | 'https://api.mainnet-beta.solana.com';
+  | 'https://api.mainnet-beta.solana.com'
 
 export type AdminSettings = {
   platform: PublicKey;

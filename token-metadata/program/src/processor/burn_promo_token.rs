@@ -19,19 +19,20 @@ impl<'info> BurnPromoToken<'info> {
             }
         }
 
-        if self.admin_settings.burn_promo_token_lamports > 0 {
-            transfer_sol(
-                CpiContext::new(
-                    self.system_program.to_account_info(),
-                    TransferSol {
-                        payer: self.promo_owner.to_account_info(),
-                        to: self.platform.to_account_info(),
-                        system_program: self.system_program.clone(),
-                    },
-                ),
-                self.admin_settings.create_promo_lamports,
-            )?;
-        }
+        // commenting out for demo since promo owner is not a signer
+        // if self.admin_settings.burn_promo_token_lamports > 0 {
+        //     transfer_sol(
+        //         CpiContext::new(
+        //             self.system_program.to_account_info(),
+        //             TransferSol {
+        //                 payer: self.promo_owner.to_account_info(),
+        //                 to: self.platform.to_account_info(),
+        //                 system_program: self.system_program.clone(),
+        //             },
+        //         ),
+        //         self.admin_settings.create_promo_lamports,
+        //     )?;
+        // }
 
         let burn_ctx = anchor_spl::token::Burn {
             mint: self.mint.to_account_info(),

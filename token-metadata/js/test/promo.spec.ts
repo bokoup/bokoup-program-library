@@ -113,6 +113,7 @@ describe('promo', () => {
         ...promoAccount,
       });
       console.log('promoExtended: ', promoExtended);
+      console.log('mintAddress: ', promoExtended.mintAccount.address.toString());
 
       const platformAccountInfo =
         await tokenMetadataProgram.program.provider.connection.getAccountInfo(
@@ -129,7 +130,10 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(promoAccount.mint)
+      .mintPromoToken(
+        promoAccount.mint,
+        // promoOwner
+      )
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -160,7 +164,11 @@ describe('promo', () => {
       );
 
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .burnPromoToken(platform.publicKey, promoAccount.mint, promoOwner)
+      .burnPromoToken(
+        platform.publicKey,
+        promoAccount.mint,
+        // promoOwner
+      )
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),

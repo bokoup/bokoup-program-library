@@ -162,15 +162,21 @@ export class TokenMetadataProgram {
    *
    * @return Address of promo account
    */
-  async mintPromoToken(mint: PublicKey): Promise<PublicKey> {
+  // no promo owner as signer for demo
+  async mintPromoToken(
+    mint: PublicKey,
+    // promoOwner: Keypair,
+  ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
       .mintPromoToken()
       .accounts({
         mint,
+        // promoOwner: promoOwner.publicKey,
         tokenAccount,
       })
+      // .signers([promoOwner])
       .rpc();
 
     return tokenAccount;
@@ -206,10 +212,11 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
+  // no promo owner as signer for demo
   async burnPromoToken(
     platform: PublicKey,
     mint: PublicKey,
-    promoOwner: Keypair,
+    // promoOwner: Keypair,
   ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
@@ -217,11 +224,11 @@ export class TokenMetadataProgram {
       .burnPromoToken()
       .accounts({
         mint,
-        promoOwner: promoOwner.publicKey,
+        // promoOwner: promoOwner.publicKey,
         tokenAccount,
         platform,
       })
-      .signers([promoOwner])
+      // .signers([promoOwner])
       .rpc();
 
     return tokenAccount;
