@@ -13,7 +13,7 @@ use borsh::BorshDeserialize;
 use state::{AdminSettings, DataV2, Promo};
 use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, PROMO_PREFIX};
 
-declare_id!("3rgtdHtt9gMsmcpjFQDzdFvU6BsuSjbb2oYcoy78kDQB");
+declare_id!("CeL5YpTDPpjEFWs1p8DRV2Wpk7ygS21qsbzE1zndoPRw");
 
 #[program]
 pub mod bpl_token_metadata {

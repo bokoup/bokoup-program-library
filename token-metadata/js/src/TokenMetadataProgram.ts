@@ -13,6 +13,7 @@ import {
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
 import { Promo, DataV2, MetadataJson, AdminSettings, Promos, PromoExtendeds, UI } from '.';
+import { Transaction } from '@metaplex-foundation/mpl-core';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
 export class TokenMetadataProgram {
@@ -31,7 +32,7 @@ export class TokenMetadataProgram {
   payer: Wallet;
 
   constructor(provider: Provider) {
-    this.PUBKEY = new PublicKey('3rgtdHtt9gMsmcpjFQDzdFvU6BsuSjbb2oYcoy78kDQB');
+    this.PUBKEY = new PublicKey('CeL5YpTDPpjEFWs1p8DRV2Wpk7ygS21qsbzE1zndoPRw');
     this.SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey(
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
     );
@@ -190,8 +191,11 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
-  async delegatePromoToken(promo: PublicKey, mint: PublicKey): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
+  async delegatePromoToken(mint: PublicKey): Promise<PublicKey> {
+    const [[tokenAccount], [promo]] = await Promise.all([
+      this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey),
+      this.findPromoAddress(mint),
+    ]);
 
     await this.program.methods
       .delegatePromoToken()
@@ -207,7 +211,7 @@ export class TokenMetadataProgram {
   /**
    * Burn promo token
    *
-   * @param promo Promo address
+   * @param platform  Platform address
    * @param mint  Mint address
    *
    * @return Token account address
@@ -234,6 +238,40 @@ export class TokenMetadataProgram {
     return tokenAccount;
   }
 
+  /**
+   * Delegates and burns multiple tokens in a single transaction
+   *
+   * @param mints  Mint addresses
+   *
+   * @return Token account addresses
+   */
+  // no promo owner as signer for demo
+  async delegateAndBurnPromoTokens(
+    platform: PublicKey,
+    mints: PublicKey[],
+    // promoOwner: Keypair,
+  ): Promise<PublicKey[]> {
+    const tx = new Transaction();
+    const tokenAccounts: PublicKey[] = [];
+    for (const mint of mints) {
+      const [[tokenAccount], [promo]] = await Promise.all([
+        this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey),
+        this.findPromoAddress(mint),
+      ]);
+      const ixs = await Promise.all([
+        this.program.methods.delegatePromoToken().accounts({ promo, tokenAccount }).instruction(),
+        this.program.methods
+          .burnPromoToken()
+          .accounts({ mint, tokenAccount, platform })
+          .instruction(),
+      ]);
+      ixs.forEach((ix) => tx.add(ix));
+      tokenAccounts.push(tokenAccount);
+    }
+    await this.program.provider.sendAndConfirm!(tx);
+    return tokenAccounts;
+  }
+
   async getTokenAccount(address: PublicKey): Promise<TokenAccount> {
     return await getTokenAccount(this.program.provider.connection, address);
   }
@@ -257,6 +295,33 @@ export class TokenMetadataProgram {
       }),
     ) as MetadataJson;
     return new PromoExtended(promoAccountUI, mintAccount, metadataAccount, metadataJson);
+  }
+
+  async updatePromoExtended(promoExtended: PromoExtended): Promise<PromoExtended> {
+    const promoAccount = await this.program.account.promo.fetch(promoExtended.publicKey);
+    const mintAccount = await this.getMintAccount(promoExtended.mintAccount.address);
+    return new PromoExtended(
+      {
+        publicKey: promoExtended.publicKey,
+        ...promoAccount,
+      } as UI<Promo>,
+      mintAccount,
+      promoExtended.metadataAccount,
+      promoExtended.metadataJson,
+    );
+  }
+
+  async updatePromoExtendeds(promoExtendeds: PromoExtendeds): Promise<PromoExtendeds> {
+    const results = await Promise.all(
+      Object.values(promoExtendeds).map((promoExtended) => this.updatePromoExtended(promoExtended)),
+    );
+    return results.reduce(
+      (promoExtendedsNew, promoExtended) => (
+        (promoExtendedsNew[promoExtended.mintAccount.address.toString()] = promoExtended),
+        promoExtendedsNew
+      ),
+      {} as PromoExtendeds,
+    );
   }
 
   async getPromos(): Promise<Promos> {
