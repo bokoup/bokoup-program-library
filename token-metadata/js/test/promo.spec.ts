@@ -69,7 +69,7 @@ describe('promo', () => {
     const metadataData1: DataV2 = {
       name: 'Promo 1',
       symbol: 'P1',
-      uri: 'https://arweave.net/Pn9XsLMF64_-gSgoSk_lDpRwLWSej6a73FMyqLWoNnk',
+      uri: 'https://arweave.net/u27CJpMzXZnmrTwqXzHjXQnECxP0_iMzSjE-WMAec24',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,
@@ -79,7 +79,7 @@ describe('promo', () => {
     const metadataData2: DataV2 = {
       name: 'Promo 2',
       symbol: 'P2',
-      uri: 'https://arweave.net/DqOeFgoVi6H2fAN3zDNpaVvSjkAIn6VpTC4D7yZijV4',
+      uri: 'https://arweave.net/RK8RPpNWs1nVy0qqvKVAFcVQOxOltGMyDrJtt6SktTc',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,
@@ -152,7 +152,7 @@ describe('promo', () => {
 
   it('Delegates a promo token', async () => {
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(promo, promoAccount.mint)
+      .delegatePromoToken(promoAccount.mint)
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
   });
@@ -191,5 +191,21 @@ describe('promo', () => {
         'Platform lamports incorrect.',
       );
     }
+  });
+
+  it('Delegates and burns a promo token', async () => {
+    await tokenMetadataProgram.mintPromoToken(
+      promoAccount.mint,
+      // promoOwner
+    );
+
+    await tokenMetadataProgram.delegateAndBurnPromoTokens(
+      platform.publicKey,
+      [promoAccount.mint],
+      // promoOwner
+    );
+
+    promoAccount = (await tokenMetadataProgram.program.account.promo.fetch(promo)) as Promo;
+    expect(promoAccount.burns).to.equal(2, 'Promo burns incorrect.');
   });
 });

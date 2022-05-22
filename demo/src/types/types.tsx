@@ -13,6 +13,7 @@ export type State = {
     promoExtendeds: PromoExtendeds;
     tokenAccounts: TokenAccounts;
     products: Products;
+    shopPromos: ShopPromos;
     shopTotal: ShopTotal;
 };
 
@@ -25,6 +26,7 @@ export type Action =
     | { promoExtendeds: State['promoExtendeds'] }
     | { tokenAccounts: State['tokenAccounts'] }
     | { products: State['products'] }
+    | { shopPromos: State['shopPromos'] }
     | { shopTotal: State['shopTotal'] };
 
 export type TokenAccounts = {
@@ -49,7 +51,6 @@ export type ShopTotal = {
     subtotal: number,
     discount: number;
     total: number,
-    shopPromos: ShopPromos
 };
 
 export type ShopPromo = {

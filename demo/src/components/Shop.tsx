@@ -9,16 +9,17 @@ import CardHeader from '@mui/material/CardHeader';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Switch from '@mui/material/Switch';
+import { styled } from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
+import TableCell, { tableCellClasses } from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { Context, } from '../Store';
+import { Context, getTokenAccounts, } from '../Store';
 import { Action, Product, Products, ShopTotal, State, ShopPromos, ShopPromo } from '../types/types';
 import { PromoExtendeds } from '@bokoup/bpl-token-metadata';
 
@@ -47,74 +48,99 @@ export const initialShopTotal: ShopTotal = {
     quantity: 0,
     subtotal: 0,
     discount: 0,
-    total: 0,
-    shopPromos: {}
+    total: 0
 }
 
-
 export function getShopTotal(state: State, dispatch: React.Dispatch<Action>) {
-    let [subtotal, quantity, minPrice] = Object.values(state.products).reduce(
-        ([subtotal, quantity, minPrice], product) => {
+    let [subtotal, quantity] = Object.values(state.products).reduce(
+        ([subtotal, quantity], product) => {
             subtotal += product.total;
             quantity += product.quantity;
-            minPrice = product.price < minPrice ? product.price : minPrice;
-            return [subtotal, quantity, minPrice]
+            return [subtotal, quantity];
         },
-        [0, 0, 100]
+        [0, 0]
     );
 
-    let shopPromos: ShopPromos = {};
-    let discount = 0;
-    let total = subtotal;
-
-    if (state.walletConnected) {
-        let promo1Mint = 'YibmxF3rHAN1og5dNEAZ82dpSzcYeRkNECr3czZkyst';
-        let tokenAccount1 = state.tokenAccounts[promo1Mint];
-        if (tokenAccount1 && tokenAccount1.amount > 0 && quantity > 1) {
-            let shopPromo: ShopPromo = {
-                mint: tokenAccount1.mint,
-                discount: minPrice,
-                applied: 0
-            };
-
-            if (state.shopTotal.shopPromos && state.shopTotal.shopPromos[promo1Mint]) {
-                shopPromo.applied = state.shopTotal.shopPromos[promo1Mint].applied;
-            }
-
-            shopPromos[promo1Mint] = shopPromo;
-            discount = shopPromo.applied ? shopPromo.discount : discount;
-            total = subtotal - discount
-        };
-
-        let promo2Mint = 'FjuhWzDDqG9aR5g95VKRUWndVYt7wVq78cptPrLMKTgA';
-        let tokenAccount2 = state.tokenAccounts[promo1Mint];
-        if (tokenAccount2 && tokenAccount2.amount > 0 && total > 1) {
-            let shopPromo: ShopPromo = {
-                mint: tokenAccount2.mint,
-                discount: total * 0.25,
-                applied: 0
-            };
-
-            if (state.shopTotal.shopPromos && state.shopTotal.shopPromos[promo2Mint]) {
-                shopPromo.applied = state.shopTotal.shopPromos[promo2Mint].applied;
-            }
-
-            shopPromos[promo2Mint] = shopPromo;
-            discount = shopPromo.applied ? shopPromo.discount : discount;
-            total = subtotal - discount
-        };
-    };
-
+    let discount = Object.values(state.shopPromos).reduce(
+        (discount, shopPromo) => {
+            discount += shopPromo.applied;
+            return discount;
+        },
+        0
+    );
     const shopTotal: ShopTotal = {
         quantity,
         subtotal,
         discount,
-        total,
-        shopPromos
+        total: subtotal - discount,
     };
     dispatch({ shopTotal });
-
 }
+
+export function getShopPromos(state: State, dispatch: React.Dispatch<Action>) {
+    console.log("getShopPromos");
+    let minPrice = Object.values(state.products).reduce(
+        (minPrice, product) => {
+            minPrice = product.price < minPrice ? product.price : minPrice;
+            return minPrice;
+        },
+        100
+    );
+
+    let shopPromos: ShopPromos = {};
+
+    if (state.walletConnected) {
+        let promo2 = 'C7z7qz8SMTRcq5pj9ZL3KzJMWoRaU7CMmV5rVzrbUdog';
+        let tokenAccount2 = state.tokenAccounts[promo2];
+        if (tokenAccount2 && tokenAccount2.amount > 0 && state.shopTotal.quantity > 1) {
+            let shopPromo: ShopPromo = {
+                mint: tokenAccount2.mint,
+                discount: minPrice,
+                applied: 0
+            };
+
+            if (state.shopPromos && state.shopPromos[promo2]) {
+                shopPromo.applied = state.shopPromos[promo2].applied;
+            }
+            shopPromos[promo2] = shopPromo;
+        };
+
+        let promo1 = '3QHv4twrkwgzyTT6yRk2tjdPbXWiRhYBkQUt4AX2C8M6';
+        let tokenAccount1 = state.tokenAccounts[promo1];
+        let promo2Applied = shopPromos && shopPromos[promo2] ? shopPromos[promo2].applied : 0;
+        if (tokenAccount1 && tokenAccount1.amount > 0 && state.shopTotal.subtotal - promo2Applied > 1) {
+            let shopPromo: ShopPromo = {
+                mint: tokenAccount1.mint,
+                discount: (state.shopTotal.subtotal - promo2Applied) * 0.25,
+                applied: 0
+            };
+
+            if (state.shopPromos && state.shopPromos[promo1]) {
+                shopPromo.applied = state.shopPromos[promo1].applied;
+            }
+
+            shopPromos[promo1] = shopPromo;
+        };
+        dispatch({ shopPromos });
+    };
+}
+
+const StyledTableRow = styled(TableRow)(({ theme }) => ({
+    'td': {
+        color: theme.palette.text.secondary,
+    },
+    'th': {
+        color: theme.palette.text,
+        fontSize: 12,
+    },
+}));
+
+const StyledTableRowPromoHeader = styled(TableRow)(({ theme }) => ({
+    'td': {
+        color: theme.palette.text,
+        fontSize: 12,
+    },
+}));
 
 export const ProductRows: FC<{
     products: Products,
@@ -125,10 +151,10 @@ export const ProductRows: FC<{
     return (
         <React.Fragment>
             {Object.values(products).map((row) => (
-                <TableRow
+                <StyledTableRow
                     key={row.name}
                 >
-                    <TableCell component="th" scope="row">
+                    <TableCell>
                         <Box sx={{ height: 80, width: 80, minWidth: 80 }} component="img" src={row.src} />
                     </TableCell>
                     <TableCell align="left">{row.description}</TableCell>
@@ -142,7 +168,7 @@ export const ProductRows: FC<{
                             sx={{ direction: 'rtl', width: '66%' }}
                         /></TableCell>
                     <TableCell align="right">{row.total.toFixed(2)}</TableCell>
-                </TableRow>
+                </StyledTableRow>
             ))}
 
             <TableRow
@@ -158,24 +184,22 @@ export const ProductRows: FC<{
 }
 
 export const PromoRows: FC<{
+    shopPromos: ShopPromos,
     shopTotal: ShopTotal,
-    promoExtendeds: PromoExtendeds,
+    promoExtendeds: PromoExtendeds
     dispatch: React.Dispatch<Action>
-}> = ({ shopTotal, promoExtendeds, dispatch }) => {
+}> = ({ shopPromos, shopTotal, promoExtendeds, dispatch }) => {
     console.log("renderPromoRows");
 
-    function handleApplyChange(key: string, shopTotal: ShopTotal) {
-        let shopTotalNew = Object.assign({}, shopTotal);
-        if (shopTotalNew.shopPromos[key].applied > 0) {
-            shopTotalNew.shopPromos[key].applied = 0;
-            shopTotalNew.discount -= shopTotalNew.shopPromos[key].discount;
-            shopTotalNew.total += shopTotalNew.shopPromos[key].discount;
+    function handleApplyChange(key: string, promos: ShopPromos) {
+        let shopPromosNew = Object.assign({}, promos);
+        if (promos[key].applied > 0) {
+            shopPromosNew[key].applied = 0;
         } else {
-            shopTotalNew.shopPromos[key].applied = shopTotalNew.shopPromos[key].discount;
-            shopTotalNew.discount += shopTotalNew.shopPromos[key].discount;
-            shopTotalNew.total -= shopTotalNew.shopPromos[key].discount;
+            shopPromosNew[key].applied = promos[key].discount;
         };
-        dispatch({ shopTotal: shopTotalNew })
+        console.log("shopPromosNew: ", shopPromosNew);
+        dispatch({ shopPromos: shopPromosNew })
     };
 
     return (
@@ -185,29 +209,29 @@ export const PromoRows: FC<{
             >
                 {Array(5).fill(0).map((_, i) => <TableCell key={i} />)}
             </TableRow>
-            <TableRow sx={{ 'td, th': { padding: 2 } }}>
-                <TableCell>Promo</TableCell>
-                <TableCell sx={{ colspan: 2 }} >Description</TableCell>
+            <StyledTableRowPromoHeader sx={{ 'td, th': { padding: 2 } }}>
+                <TableCell>PROMO</TableCell>
+                <TableCell sx={{ colspan: 2 }} >DESCRIPTION</TableCell>
                 <TableCell ></TableCell>
-                <TableCell align="right">Apply</TableCell>
-                <TableCell align="right">Discount</TableCell>
-            </TableRow>
-            {Object.entries(shopTotal.shopPromos).map(([key, shopPromo]) => (
-                <TableRow
+                <TableCell align="right">APPLY</TableCell>
+                <TableCell align="right">DISCOUNT</TableCell>
+            </StyledTableRowPromoHeader>
+            {Object.entries(shopPromos).map(([key, shopPromo]) => (
+                <StyledTableRow
                     key={key}
                 >
-                    <TableCell component="th" scope="row">
+                    <TableCell>
                         <Box sx={{ height: 80, width: 80, minWidth: 80 }} component="img" src={promoExtendeds[key].metadataJson.image} />
                     </TableCell>
                     <TableCell colSpan={2} >{promoExtendeds[key].metadataJson.description}</TableCell>
                     <TableCell align="right">
                         <Switch
                             checked={shopPromo.applied > 0}
-                            onChange={() => handleApplyChange(key, shopTotal)}
+                            onChange={() => handleApplyChange(key, shopPromos)}
                             inputProps={{ 'aria-label': `${key}` }}
                         /></TableCell>
                     <TableCell align="right">{shopPromo.applied.toFixed(2)}</TableCell>
-                </TableRow>
+                </StyledTableRow>
             ))}
             <TableRow
                 key={"discount"}
@@ -232,26 +256,51 @@ export const Shop: FC = () => {
         dispatch({ products })
     };
 
-    const promoRows = state.walletConnected && Object.keys(state.shopTotal.shopPromos).length
-        ? <PromoRows shopTotal={state.shopTotal} promoExtendeds={state.promoExtendeds} dispatch={dispatch} />
+    async function handleCheckout() {
+        const mints = Object.values(state.shopPromos).map(shopPromo => shopPromo.mint);
+        if (mints) {
+            const platform = await state.program.fetchPlatformAddress();
+            await state.program.delegateAndBurnPromoTokens(platform, mints);
+            const [promoExtendeds] = await Promise.all([
+                state.program.updatePromoExtendeds(state.promoExtendeds),
+                getTokenAccounts(state, dispatch)
+            ]);
+            dispatch({ promoExtendeds });
+        };
+        let products = Object.assign({}, state.products);
+        Object.values(products).forEach(product => {
+            product.quantity = 0;
+            product.total = 0;
+        })
+        dispatch({ products });
+    };
+
+    const promoRows = state.walletConnected && Object.keys(state.shopPromos).length
+        ? <PromoRows shopPromos={state.shopPromos} shopTotal={state.shopTotal} promoExtendeds={state.promoExtendeds} dispatch={dispatch} />
         : null;
 
     return (
         <Grid item sx={{ flex: 1 }}>
             <Card raised>
-                <CardHeader title={'Shop'} />
+                <CardHeader title={'Shop'}
+                    subheader={
+                        <Typography color="text.secondary">
+                            Connect wallet. Get some promos. Change quantities to see available promos. Checkout only uses applied promos - no SOL transferred for product amounts.
+                        </Typography>
+                    }
+                />
                 <CardContent>
                     <Divider sx={{ pt: 1, mb: 1 }} />
                     <TableContainer >
                         <Table sx={{ minWidth: 420 }} aria-label="simple table">
                             <TableHead>
-                                <TableRow>
-                                    <TableCell>Product</TableCell>
-                                    <TableCell >Description</TableCell>
-                                    <TableCell align="right">Price</TableCell>
-                                    <TableCell align="right">Quantity</TableCell>
-                                    <TableCell align="right">Total</TableCell>
-                                </TableRow>
+                                <StyledTableRow>
+                                    <TableCell>PRODUCT</TableCell>
+                                    <TableCell >DESCRIPTION</TableCell>
+                                    <TableCell align="right">PRICE</TableCell>
+                                    <TableCell align="right">QUANTITY</TableCell>
+                                    <TableCell align="right">TOTAL</TableCell>
+                                </StyledTableRow>
                             </TableHead>
                             <TableBody>
                                 <ProductRows products={state.products} subtotal={state.shopTotal.subtotal} handleQuantityChange={handleQuantityChange} />
@@ -277,7 +326,7 @@ export const Shop: FC = () => {
                     </TableContainer>
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'center', mb: 2 }}>
-                    <Button variant="contained" disabled={!state.walletConnected || state.shopTotal.total == 0} color="primary" onClick={() => console.log("nada coolangatta")}>
+                    <Button variant="contained" disabled={!state.walletConnected || state.shopTotal.total == 0} color="primary" onClick={handleCheckout}>
                         CHECK OUT
                     </Button>
                 </CardActions>
@@ -285,6 +334,3 @@ export const Shop: FC = () => {
         </Grid>
     );
 };
-
-
-

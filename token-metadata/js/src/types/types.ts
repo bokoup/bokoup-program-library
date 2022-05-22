@@ -6,6 +6,7 @@ export type Network =
   | 'http://127.0.0.1:8899'
   | 'https://api.devnet.solana.com'
   | 'https://api.mainnet-beta.solana.com'
+  | 'https://cool-holy-violet.solana-devnet.quiknode.pro/eade67b5a902b1fcc01bd641b488e173fd279eae/';
 
 export type AdminSettings = {
   platform: PublicKey;

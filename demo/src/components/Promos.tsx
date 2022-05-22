@@ -1,5 +1,4 @@
 import React, { FC, useContext, Fragment } from 'react';
-
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -68,9 +67,9 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     title={promoExtended.metadataAccount.data.name}
                     subheader={
                         <Link
-                            sx={{ fontSize: 12, fontWeight: 'medium' }}
+                            sx={{ fontSize: 12 }}
                             underline="hover"
-                            color="secondary.light"
+                            color="primary.light"
                             href={getExplorerLink(mintString)}
                             target="_blank"
                         >
@@ -80,9 +79,10 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                 />
                 <CardMedia component="img" src={promoExtended.metadataJson.image} />
                 <CardContent>
-                    <Typography sx={{ fontSize: 12, pb: 1, fontWeight: 'medium' }} component="div">
-                        DESCRIPTION
+                    <Typography sx={{ fontSize: 12, pb: 1 }} component="div">
+                        DETAILS
                     </Typography>
+
                     <Typography sx={{ fontSize: 14 }} color="text.secondary" component="div">
                         {promoExtended.metadataJson.description}
                     </Typography>

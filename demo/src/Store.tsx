@@ -1,6 +1,6 @@
 import React, { createContext, useReducer, ReactNode, FC, useEffect, useMemo } from 'react';
-import { Action, State, TokenAccounts, } from './types/types';
-import { initialProducts, initialShopTotal, getShopTotal } from './components/Shop';
+import { Action, State, TokenAccounts, ShopPromos } from './types/types';
+import { initialProducts, initialShopTotal, getShopTotal, getShopPromos } from './components/Shop';
 import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
 import {
     TokenMetadataProgram,
@@ -32,7 +32,8 @@ export const dummyWallet: AnchorWallet = {
         return [] as Transaction[];
     },
 };
-const network = process.env.REACT_APP_NETWORK_URL as Network;
+const network = process.env.REACT_APP_NETWORK_URL as Network
+    || 'https://api.devnet.solana.com' as Network;
 const connection = new Connection(network, confirmOptions);
 const provider = new AnchorProvider(connection, dummyWallet, confirmOptions);
 const program = new TokenMetadataProgram(provider);
@@ -53,6 +54,7 @@ const initialState: State = {
     promoExtendeds: {} as PromoExtendeds,
     tokenAccounts: {} as TokenAccounts,
     products: initialProducts,
+    shopPromos: {} as ShopPromos,
     shopTotal: initialShopTotal
 };
 
@@ -146,25 +148,27 @@ const Store: FC<{ children: ReactNode }> = ({ children }) => {
         }
         const program = new TokenMetadataProgram(provider);
         dispatch({ program });
-
-        getTokenAccounts(state, dispatch);
-    }, [state.walletConnected]);
-
-    useEffect(() => {
+        getShopPromos(state, dispatch);
         getShopTotal(state, dispatch);
         getTokenAccounts(state, dispatch);
     }, [state.walletConnected]);
 
     useEffect(() => {
-        // getTokenAccounts(state, dispatch);
-        getShopTotal(state, dispatch);
+        getShopPromos(state, dispatch);
     }, [state.products, state.tokenAccounts]);
 
-    useMemo(() => {
+    useEffect(() => {
+        getShopTotal(state, dispatch);
+    }, [state.shopPromos]);
+
+    useEffect(() => {
+        getShopPromos(state, dispatch);
+    }, [state.shopTotal.subtotal, state.shopTotal.quantity, state.shopTotal.discount]);
+
+    useEffect(() => {
         getAdminSettings(state, dispatch);
         getPromoExtendeds(state, dispatch);
         getTokenAccounts(state, dispatch);
-        getShopTotal(state, dispatch);
     }, []);
 
     return <Context.Provider value={{ state, dispatch }}>{children}</Context.Provider>;
