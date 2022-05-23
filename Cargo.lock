@@ -1035,11 +1035,18 @@ dependencies = [
 name = "demo-api"
 version = "0.1.0"
 dependencies = [
+ "anchor-lang",
+ "anchor-spl",
  "axum",
+ "base64 0.13.0",
+ "bincode",
+ "bpl-token-metadata",
+ "futures",
  "hyper",
  "serde",
  "serde_derive",
  "serde_json",
+ "solana-sdk",
  "thiserror",
  "tokio",
  "tower",
@@ -2580,9 +2587,9 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "remove_dir_all"
-version = "0.5.3"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
+checksum = "dfc5b3ce5d5ea144bb04ebd093a9e14e9765bcfec866aecda9b6dec43b3d1e24"
 dependencies = [
  "winapi",
 ]

@@ -1,6 +1,7 @@
 use crate::{CreateMetaData, CreateNonFungible, TransferSol};
 use anchor_lang::prelude::*;
-use mpl_token_metadata::state::DataV2;
+use anchor_spl::associated_token::get_associated_token_address;
+use mpl_token_metadata::{pda::find_metadata_account, state::DataV2};
 
 pub const ADMIN_PREFIX: &str = "admin";
 pub const AUTHORITY_PREFIX: &str = "authority";
@@ -95,4 +96,24 @@ pub fn create_master_edition_v3<'a, 'b, 'c, 'info>(
         ctx.signer_seeds,
     )
     .map_err(Into::into)
+}
+
+pub async fn find_associated_token_address(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
+    get_associated_token_address(wallet, mint)
+}
+
+pub async fn find_admin_address() -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[ADMIN_PREFIX.as_bytes()], &crate::id())
+}
+
+pub async fn find_authority_address() -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[AUTHORITY_PREFIX.as_bytes()], &crate::id())
+}
+
+pub async fn find_promo_address(mint: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[PROMO_PREFIX.as_bytes(), mint.as_ref()], &crate::id())
+}
+
+pub async fn find_metadata_address(mint: &Pubkey) -> (Pubkey, u8) {
+    find_metadata_account(mint)
 }

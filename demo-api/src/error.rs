@@ -13,13 +13,15 @@ use axum::{
 pub enum AppError {
     #[error("deep hash item is not a list")]
     GenericError,
+    #[error("bincode: {0}")]
+    Bincode(#[from] Box<bincode::ErrorKind>),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response<BoxBody> {
         let status = match self {
-            AppError::GenericError => StatusCode::BAD_REQUEST,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::GenericError => StatusCode::INTERNAL_SERVER_ERROR,
+            _ => StatusCode::BAD_REQUEST,
         };
 
         let body = Json(json!({
