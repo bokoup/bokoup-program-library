@@ -1,0 +1,21 @@
+[package]
+name = "demo-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.5.6"
+serde = "1.0.130"
+serde_derive = "1.0.130"
+serde_json = "1.0.68"
+thiserror = "1.0.30"
+tokio = { version = "1.0", features = ["full"] }
+tower = { version = "0.4", features = ["util", "timeout", "load-shed", "limit"] }
+tower-http = { version = "0.3.3", features = ["add-extension", "auth", "compression-full", "trace" ] }
+tracing = "0.1"
+tracing-subscriber = { version="0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+hyper = { version = "0.14", features = ["full"] }
