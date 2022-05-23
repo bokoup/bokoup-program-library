@@ -1,3 +1,4 @@
+use anchor_lang::solana_program::pubkey::ParsePubkeyError;
 use serde_json::json;
 use thiserror::Error;
 
@@ -14,7 +15,9 @@ pub enum AppError {
     #[error("deep hash item is not a list")]
     GenericError,
     #[error("bincode: {0}")]
-    Bincode(#[from] Box<bincode::ErrorKind>),
+    BincodeError(#[from] Box<bincode::ErrorKind>),
+    #[error("bincode: {0}")]
+    PubkeyError(#[from] ParsePubkeyError),
 }
 
 impl IntoResponse for AppError {

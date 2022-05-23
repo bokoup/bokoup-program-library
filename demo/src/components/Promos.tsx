@@ -13,6 +13,7 @@ import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import { Context, getPromoExtended, getTokenAccount } from '../Store';
 import { Attribute } from '@bokoup/bpl-token-metadata';
+import { PublicKey } from '@solana/web3.js';
 
 export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     // console.log("rendered", seriesParam.metadataInfo.name);
@@ -60,6 +61,21 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
             );
     };
 
+    async function handleQRCode(mint: PublicKey) {
+        const url = new URL('promo', process.env.REACT_APP_API_URL!);
+        let response = await fetch(url.toString(),
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ account: state.wallet.publicKey.toString(), mint: mint.toString() })
+            }
+        );
+        console.log(await response.json());
+    };
+
     return (
         <Grid item sm={6}>
             <Card raised>
@@ -98,6 +114,9 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                 <CardActions sx={{ justifyContent: 'center', mb: 2 }}>
                     <Button variant="contained" disabled={!state.walletConnected} color="primary" onClick={handleClick}>
                         GET PROMO
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={() => handleQRCode(promoExtended.mintAccount.address)}>
+                        QR CODE
                     </Button>
                 </CardActions>
             </Card>

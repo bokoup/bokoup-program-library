@@ -15,5 +15,5 @@ solana-test-validator \
 --clone metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s \
 --clone PwDiXFxQsGra4sFFTT8r1QWRMd4vfumiWC1jfWNfdYT \
 --rpc-port 8899 \
---url https://cool-holy-violet.solana-devnet.quiknode.pro/eade67b5a902b1fcc01bd641b488e173fd279eae/ \
+--url https://api.devnet.solana.com \
 --geyser-plugin-config indexer/Config.json
