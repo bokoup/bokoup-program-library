@@ -1,5 +1,5 @@
-import React, { createContext, useReducer, ReactNode, FC, useEffect, useMemo } from 'react';
-import { Action, State, TokenAccounts, ShopPromos } from './types/types';
+import React, { createContext, useReducer, ReactNode, FC, useEffect } from 'react';
+import { Action, State, TokenAccounts, ShopPromos, MintEvent } from './types/types';
 import { initialProducts, initialShopTotal, getShopTotal, getShopPromos } from './components/Shop';
 import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
 import {
@@ -14,6 +14,9 @@ import {
 import { AnchorProvider, BN } from '@project-serum/anchor';
 import { Keypair, Transaction } from '@solana/web3.js';
 import { AnchorWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
+
+export const PROMO1 = 'GeWRS2Det9da6K2xQw4Fd62Kv3qVQx1E3wsjAqk8DGs1';
+export const PROMO2 = '9cppW5ugbEHygEicY8vWcgyCRNqkbdTiwjqtBDpH7913';
 
 const confirmOptions: ConfirmOptions = {
     skipPreflight: false,
@@ -55,7 +58,8 @@ const initialState: State = {
     tokenAccounts: {} as TokenAccounts,
     products: initialProducts,
     shopPromos: {} as ShopPromos,
-    shopTotal: initialShopTotal
+    shopTotal: initialShopTotal,
+    mintEvent: {} as MintEvent
 };
 
 const Reducer = (state: State, action: Action): State => {
@@ -71,24 +75,18 @@ export async function getAdminSettings(state: State, dispatch: React.Dispatch<Ac
     dispatch({ adminSettings });
 }
 
-export async function getPromoExtended(state: State, dispatch: React.Dispatch<Action>, promoExtended: PromoExtended) {
+export async function getPromoExtended(state: State, dispatch: React.Dispatch<Action>, mintString: string) {
     const promoExtendeds = Object.assign({}, state.promoExtendeds);
+    console.log(mintString);
 
-    const promoExtendedUpdated = await state.program.program.account.promo
-        .fetch(promoExtended.publicKey)
-        .then((promoAccount) =>
-            state.program.getPromoExtended({ publicKey: promoExtended.publicKey, ...promoAccount } as UI<Promo>)
-        );
-
-    promoExtendeds[promoExtendedUpdated.mintAccount.address.toString()] = promoExtendedUpdated;
-
-    dispatch({ promoExtendeds });
+    if (state.promoExtendeds[mintString]) {
+        promoExtendeds[mintString] = await state.program.getPromoExtended(new PublicKey(mintString))
+        dispatch({ promoExtendeds });
+    }
 }
 
 export async function getPromoExtendeds(state: State, dispatch: React.Dispatch<Action>) {
-    const promoExtendeds = await state.program.getPromos().then((res) => {
-        return state.program.getPromoExtendeds(res);
-    });
+    const promoExtendeds = await state.program.getPromoExtendeds([PROMO1, PROMO2].map(mintString => new PublicKey(mintString)));
     dispatch({ promoExtendeds });
 }
 
@@ -166,9 +164,19 @@ const Store: FC<{ children: ReactNode }> = ({ children }) => {
     }, [state.shopTotal.subtotal, state.shopTotal.quantity, state.shopTotal.discount]);
 
     useEffect(() => {
+        if (state.mintEvent.mintString && state.promoExtendeds[state.mintEvent.mintString]) {
+            getPromoExtended(state, dispatch, state.mintEvent.mintString);
+        }
+    }, [state.mintEvent]);
+
+    useEffect(() => {
         getAdminSettings(state, dispatch);
         getPromoExtendeds(state, dispatch);
         getTokenAccounts(state, dispatch);
+        state.program.program.addEventListener("MintEvent", (event, slot) => {
+            const mintEvent = { mintString: event.mint, slot } as MintEvent;
+            dispatch({ mintEvent })
+        })
     }, []);
 
     return <Context.Provider value={{ state, dispatch }}>{children}</Context.Provider>;

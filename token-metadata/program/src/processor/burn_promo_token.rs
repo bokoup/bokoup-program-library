@@ -12,13 +12,6 @@ impl<'info> BurnPromoToken<'info> {
             }
         }
 
-        if let Some(expiry) = self.promo.expiry {
-            let clock = Clock::get()?;
-            if clock.unix_timestamp >= expiry {
-                return Err(ProgramError::ExpiryExceeded.into());
-            }
-        }
-
         // commenting out for demo since promo owner is not a signer
         // if self.admin_settings.burn_promo_token_lamports > 0 {
         //     transfer_sol(

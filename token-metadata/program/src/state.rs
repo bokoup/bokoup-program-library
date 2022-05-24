@@ -36,49 +36,29 @@ impl AdminSettings {
 #[derive(PartialEq, Debug, Copy)]
 pub struct Promo {
     pub owner: Pubkey,
-    pub mint: Pubkey,
-    pub metadata: Pubkey,
     pub mints: u32,
     pub burns: u32,
     pub max_mint: Option<u32>,
     pub max_burn: Option<u32>,
-    pub expiry: Option<i64>,
 }
 
 impl Promo {
     pub const LEN: usize = 8
     + 32        // owner
-    + 32        // mint
-    + 32        // metadata
     + 16        // mints
     + 16        // burns
     + 1 + 4     // max_mint
-    + 1 + 4     // max_redeem
-    + 1 + 8; // expiry
+    + 1 + 4; // max_redeem
 }
 
 //==============================
-// Discount
+// MintEvent
 //==============================
-
-// add currency
-//
-
-#[account]
-#[derive(PartialEq, Debug)]
-pub struct Discount {
-    pub buyer: Pubkey,
-    pub promo: Pubkey,
-    pub amount: u64,
-    pub applied: bool,
-}
-
-impl Discount {
-    pub const LEN: usize = 8
-    + 32        // buyer
-    + 32        // promo
-    + 8         // amount
-    + 1; // applied
+#[event]
+pub struct MintEvent {
+    #[index]
+    pub mint: String,
+    pub token_account: String,
 }
 
 //==============================

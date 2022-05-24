@@ -12,7 +12,7 @@ import {
   Mint,
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
-import { Promo, DataV2, MetadataJson, AdminSettings, Promos, PromoExtendeds, UI } from '.';
+import { Promo, DataV2, MetadataJson, AdminSettings, PromoExtendeds } from '.';
 import { Transaction } from '@metaplex-foundation/mpl-core';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
@@ -32,7 +32,7 @@ export class TokenMetadataProgram {
   payer: Wallet;
 
   constructor(provider: Provider) {
-    this.PUBKEY = new PublicKey('CeL5YpTDPpjEFWs1p8DRV2Wpk7ygS21qsbzE1zndoPRw');
+    this.PUBKEY = new PublicKey('FtccGbN7AXvtqWP5Uf6pZ9xMdAyA7DXBmRQtmvjGDX7x');
     this.SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey(
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
     );
@@ -114,10 +114,7 @@ export class TokenMetadataProgram {
   ): Promise<PublicKey> {
     const mint = Keypair.generate();
 
-    const [[promo], [metadata]] = await Promise.all([
-      this.findPromoAddress(mint.publicKey),
-      this.findMetadataAddress(mint.publicKey),
-    ]);
+    const [metadata] = await this.findMetadataAddress(mint.publicKey);
 
     const signers = [mint];
     let owner = this.payer.publicKey;
@@ -128,16 +125,11 @@ export class TokenMetadataProgram {
 
     const promoData: Promo = {
       owner,
-      mint: mint.publicKey,
-      metadata,
       mints: 0,
       burns: 0,
       maxMint,
       maxBurn: maxBurn == undefined ? null : maxBurn,
-      expiry: expiry == undefined ? null : new BN(expiry.valueOf() / 1000),
     };
-
-    promoData.metadata = metadata;
 
     await this.program.methods
       .createPromo(promoData, metadataData, isMutable)
@@ -151,7 +143,7 @@ export class TokenMetadataProgram {
       .signers(signers)
       .rpc();
 
-    return promo;
+    return mint.publicKey;
   }
 
   /**
@@ -186,24 +178,14 @@ export class TokenMetadataProgram {
   /**
    * Delegate promo token
    *
-   * @param promo Promo address
    * @param mint  Mint address
    *
    * @return Token account address
    */
   async delegatePromoToken(mint: PublicKey): Promise<PublicKey> {
-    const [[tokenAccount], [promo]] = await Promise.all([
-      this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey),
-      this.findPromoAddress(mint),
-    ]);
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
-    await this.program.methods
-      .delegatePromoToken()
-      .accounts({
-        promo,
-        tokenAccount,
-      })
-      .rpc();
+    await this.program.methods.delegatePromoToken().accounts({ tokenAccount }).rpc();
 
     return tokenAccount;
   }
@@ -284,27 +266,31 @@ export class TokenMetadataProgram {
     return await Metadata.fromAccountAddress(this.program.provider.connection, address);
   }
 
-  async getPromoExtended(promoAccountUI: UI<Promo>): Promise<PromoExtended> {
-    const [mintAccount, metadataAccount] = await Promise.all([
-      this.getMintAccount(promoAccountUI.mint),
-      this.getMetadataAccount(promoAccountUI.metadata),
+  async getPromoExtended(mint: PublicKey): Promise<PromoExtended> {
+    const [[promo], [metadata]] = await Promise.all([
+      this.findPromoAddress(mint),
+      this.findMetadataAddress(mint),
     ]);
+
+    const [promoAccount, mintAccount, metadataAccount] = (await Promise.all([
+      this.program.account.promo.fetch(promo),
+      this.getMintAccount(mint),
+      this.getMetadataAccount(metadata),
+    ])) as [Promo, Mint, Metadata];
     const metadataJson = camelcaseKeysDeep(
       await fetch(metadataAccount.data.uri).then((res) => {
         return res.json();
       }),
     ) as MetadataJson;
-    return new PromoExtended(promoAccountUI, mintAccount, metadataAccount, metadataJson);
+    return new PromoExtended(promo, promoAccount, mintAccount, metadataAccount, metadataJson);
   }
 
   async updatePromoExtended(promoExtended: PromoExtended): Promise<PromoExtended> {
-    const promoAccount = await this.program.account.promo.fetch(promoExtended.publicKey);
+    const promoAccount = (await this.program.account.promo.fetch(promoExtended.publicKey)) as Promo;
     const mintAccount = await this.getMintAccount(promoExtended.mintAccount.address);
     return new PromoExtended(
-      {
-        publicKey: promoExtended.publicKey,
-        ...promoAccount,
-      } as UI<Promo>,
+      promoExtended.publicKey,
+      promoAccount,
       mintAccount,
       promoExtended.metadataAccount,
       promoExtended.metadataJson,
@@ -324,23 +310,8 @@ export class TokenMetadataProgram {
     );
   }
 
-  async getPromos(): Promise<Promos> {
-    const promoAccountUIs = (await this.program.account.promo.all()) as {
-      publicKey: PublicKey;
-      account: Promo;
-    }[];
-    return promoAccountUIs.reduce(
-      (promos, { publicKey, account }) => (
-        (promos[account.mint.toString()] = { publicKey, ...account }), promos
-      ),
-      {} as Promos,
-    );
-  }
-
-  async getPromoExtendeds(promos: Promos): Promise<PromoExtendeds> {
-    const results = await Promise.all(
-      Object.entries(promos).map(([_mint, promo]) => this.getPromoExtended(promo)),
-    );
+  async getPromoExtendeds(mints: PublicKey[]): Promise<PromoExtendeds> {
+    const results = await Promise.all(mints.map((mint) => this.getPromoExtended(mint)));
     return results.reduce(
       (promoExtendeds, promoExtended) => (
         (promoExtendeds[promoExtended.mintAccount.address.toString()] = promoExtended),
@@ -397,24 +368,22 @@ export class PromoExtended {
   burns: number;
   maxMint: number | null;
   maxBurn: number | null;
-  expiry: Date | null;
 
   constructor(
-    promoAccountUI: UI<Promo>,
+    promo: PublicKey,
+    promoAccount: Promo,
     mintAccount: Mint,
     metadataAccount: Metadata,
     metadataJson: MetadataJson,
   ) {
-    this.publicKey = promoAccountUI.publicKey;
-    this.owner = promoAccountUI.owner;
+    this.publicKey = promo;
+    this.owner = promoAccount.owner;
     this.mintAccount = mintAccount;
     this.metadataAccount = metadataAccount;
     this.metadataJson = metadataJson;
-    this.mints = promoAccountUI.mints;
-    this.burns = promoAccountUI.burns;
-    this.maxMint = promoAccountUI.maxMint;
-    this.maxBurn = promoAccountUI.maxBurn;
-    this.expiry =
-      promoAccountUI.expiry == null ? null : new Date(promoAccountUI.expiry.toNumber() * 1000);
+    this.mints = promoAccount.mints;
+    this.burns = promoAccount.burns;
+    this.maxMint = promoAccount.maxMint;
+    this.maxBurn = promoAccount.maxBurn;
   }
 }

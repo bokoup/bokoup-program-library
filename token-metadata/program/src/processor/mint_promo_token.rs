@@ -1,20 +1,17 @@
-use crate::{error::ProgramError, MintPromoToken};
+use crate::{error::ProgramError, state::MintEvent, MintPromoToken};
 use anchor_lang::prelude::*;
 
 impl<'info> MintPromoToken<'info> {
     pub fn process(&mut self, authority_seeds: [&[u8]; 2]) -> Result<()> {
         msg!("Mint promo token");
+        emit!(MintEvent {
+            mint: self.mint.key().to_string(),
+            token_account: self.token_account.key().to_string(),
+        });
 
         if let Some(max_mint) = self.promo.max_mint {
             if self.promo.mints >= max_mint {
                 return Err(ProgramError::MaxMintExceeded.into());
-            }
-        }
-
-        if let Some(expiry) = self.promo.expiry {
-            let clock = Clock::get()?;
-            if clock.unix_timestamp >= expiry {
-                return Err(ProgramError::ExpiryExceeded.into());
             }
         }
 
