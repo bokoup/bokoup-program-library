@@ -1,0 +1,9 @@
+Dockerfile
+.env
+*.key
+target
+node_modules
+demo
+indexer
+.anchor
+.github

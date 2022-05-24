@@ -13,7 +13,7 @@ use borsh::BorshDeserialize;
 use state::{AdminSettings, DataV2, Promo};
 use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, PROMO_PREFIX};
 
-declare_id!("CeL5YpTDPpjEFWs1p8DRV2Wpk7ygS21qsbzE1zndoPRw");
+declare_id!("FtccGbN7AXvtqWP5Uf6pZ9xMdAyA7DXBmRQtmvjGDX7x");
 
 #[program]
 pub mod bpl_token_metadata {
@@ -137,8 +137,9 @@ pub struct DelegatePromoToken<'info> {
     /// CHECK: pubkey checked via seeds
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
+    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), token_account.mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
-    #[account(mut, constraint = token_account.mint == promo.mint)]
+    #[account(mut, constraint = token_account.owner == payer.key())]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,

@@ -20,13 +20,10 @@ export type UI<T> = T & {
 
 export type Promo = {
   owner: PublicKey;
-  mint: PublicKey;
-  metadata: PublicKey;
   mints: number;
   burns: number;
   maxMint: number | null;
   maxBurn: number | null;
-  expiry: BN | null;
 };
 
 export type PromoExtendeds = {

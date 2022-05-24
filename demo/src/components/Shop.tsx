@@ -12,14 +12,14 @@ import Switch from '@mui/material/Switch';
 import { styled } from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
-import TableCell, { tableCellClasses } from '@mui/material/TableCell';
+import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { Context, getTokenAccounts, } from '../Store';
+import { Context, getTokenAccounts, PROMO1, PROMO2 } from '../Store';
 import { Action, Product, Products, ShopTotal, State, ShopPromos, ShopPromo } from '../types/types';
 import { PromoExtendeds } from '@bokoup/bpl-token-metadata';
 
@@ -78,7 +78,6 @@ export function getShopTotal(state: State, dispatch: React.Dispatch<Action>) {
 }
 
 export function getShopPromos(state: State, dispatch: React.Dispatch<Action>) {
-    console.log("getShopPromos");
     let minPrice = Object.values(state.products).reduce(
         (minPrice, product) => {
             minPrice = product.price < minPrice ? product.price : minPrice;
@@ -90,8 +89,7 @@ export function getShopPromos(state: State, dispatch: React.Dispatch<Action>) {
     let shopPromos: ShopPromos = {};
 
     if (state.walletConnected) {
-        let promo2 = 'C7z7qz8SMTRcq5pj9ZL3KzJMWoRaU7CMmV5rVzrbUdog';
-        let tokenAccount2 = state.tokenAccounts[promo2];
+        let tokenAccount2 = state.tokenAccounts[PROMO2];
         if (tokenAccount2 && tokenAccount2.amount > 0 && state.shopTotal.quantity > 1) {
             let shopPromo: ShopPromo = {
                 mint: tokenAccount2.mint,
@@ -99,15 +97,14 @@ export function getShopPromos(state: State, dispatch: React.Dispatch<Action>) {
                 applied: 0
             };
 
-            if (state.shopPromos && state.shopPromos[promo2]) {
-                shopPromo.applied = state.shopPromos[promo2].applied;
+            if (state.shopPromos && state.shopPromos[PROMO2]) {
+                shopPromo.applied = state.shopPromos[PROMO2].applied;
             }
-            shopPromos[promo2] = shopPromo;
+            shopPromos[PROMO2] = shopPromo;
         };
 
-        let promo1 = '3QHv4twrkwgzyTT6yRk2tjdPbXWiRhYBkQUt4AX2C8M6';
-        let tokenAccount1 = state.tokenAccounts[promo1];
-        let promo2Applied = shopPromos && shopPromos[promo2] ? shopPromos[promo2].applied : 0;
+        let tokenAccount1 = state.tokenAccounts[PROMO1];
+        let promo2Applied = shopPromos && shopPromos[PROMO2] ? shopPromos[PROMO2].applied : 0;
         if (tokenAccount1 && tokenAccount1.amount > 0 && state.shopTotal.subtotal - promo2Applied > 1) {
             let shopPromo: ShopPromo = {
                 mint: tokenAccount1.mint,
@@ -115,11 +112,11 @@ export function getShopPromos(state: State, dispatch: React.Dispatch<Action>) {
                 applied: 0
             };
 
-            if (state.shopPromos && state.shopPromos[promo1]) {
-                shopPromo.applied = state.shopPromos[promo1].applied;
+            if (state.shopPromos && state.shopPromos[PROMO1]) {
+                shopPromo.applied = state.shopPromos[PROMO1].applied;
             }
 
-            shopPromos[promo1] = shopPromo;
+            shopPromos[PROMO1] = shopPromo;
         };
         dispatch({ shopPromos });
     };
@@ -147,7 +144,6 @@ export const ProductRows: FC<{
     subtotal: number,
     handleQuantityChange: (event: React.ChangeEvent<HTMLInputElement>) => void
 }> = ({ products, subtotal, handleQuantityChange }) => {
-    console.log("renderProductRows");
     return (
         <React.Fragment>
             {Object.values(products).map((row) => (
@@ -189,7 +185,6 @@ export const PromoRows: FC<{
     promoExtendeds: PromoExtendeds
     dispatch: React.Dispatch<Action>
 }> = ({ shopPromos, shopTotal, promoExtendeds, dispatch }) => {
-    console.log("renderPromoRows");
 
     function handleApplyChange(key: string, promos: ShopPromos) {
         let shopPromosNew = Object.assign({}, promos);
@@ -198,7 +193,7 @@ export const PromoRows: FC<{
         } else {
             shopPromosNew[key].applied = promos[key].discount;
         };
-        console.log("shopPromosNew: ", shopPromosNew);
+
         dispatch({ shopPromos: shopPromosNew })
     };
 
@@ -246,7 +241,6 @@ export const PromoRows: FC<{
 }
 
 export const Shop: FC = () => {
-    console.log("renderShop");
     const { state, dispatch } = useContext(Context);
 
     function handleQuantityChange(event: React.ChangeEvent<HTMLInputElement>) {

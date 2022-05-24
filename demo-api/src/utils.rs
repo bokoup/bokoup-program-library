@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use anchor_lang::{
     prelude::Pubkey,
-    ToAccountMetas,
+    InstructionData, ToAccountMetas,
     {
         solana_program::{instruction::Instruction, sysvar},
         system_program,
@@ -9,6 +9,7 @@ use anchor_lang::{
 };
 use bpl_token_metadata::{
     accounts::MintPromoToken as mint_promo_token_accounts,
+    instruction::MintPromoToken as mint_promo_token_instruction,
     utils::{
         find_admin_address, find_associated_token_address, find_authority_address,
         find_promo_address,
@@ -44,11 +45,13 @@ pub async fn create_transfer_promo_instruction(
         rent: sysvar::rent::id(),
         system_program: system_program::ID,
     }
-    .to_account_metas(None);
+    .to_account_metas(Some(true));
+
+    let data = mint_promo_token_instruction {}.data();
 
     Ok(Instruction {
         program_id: bpl_token_metadata::id(),
         accounts,
-        data: Vec::new(),
+        data,
     })
 }

@@ -7,6 +7,7 @@ async fn main() {
     let app = create_app();
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     tracing::debug!("listening on {}", addr);
+    println!("ding start");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

@@ -1043,6 +1043,7 @@ dependencies = [
  "bpl-token-metadata",
  "futures",
  "hyper",
+ "log",
  "serde",
  "serde_derive",
  "serde_json",

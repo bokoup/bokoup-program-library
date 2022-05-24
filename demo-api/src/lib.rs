@@ -24,8 +24,10 @@ pub fn create_app() -> Router {
         .allow_origin(Any);
 
     Router::new()
-        .route("/promo", get(get_app_id::handler))
-        .route("/promo", post(get_mint_promo_tx::handler))
+        .route("/promo1", get(get_app_id::handler))
+        .route("/promo1", post(get_mint_promo1_tx::handler))
+        .route("/promo2", get(get_app_id::handler))
+        .route("/promo2", post(get_mint_promo2_tx::handler))
         .layer(
             ServiceBuilder::new()
                 .layer(cors)
@@ -101,9 +103,8 @@ pub mod test {
         let wallet = Pubkey::new_unique();
         let mint = Pubkey::new_unique();
 
-        let data = get_mint_promo_tx::Data {
+        let data = get_mint_promo1_tx::Data {
             account: wallet.to_string(),
-            mint: mint.to_string(),
         };
 
         let response = app
@@ -121,7 +122,7 @@ pub mod test {
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        let parsed_response: get_mint_promo_tx::ResponseData =
+        let parsed_response: get_mint_promo1_tx::ResponseData =
             serde_json::from_slice(&body).unwrap();
 
         let instruction = create_transfer_promo_instruction(wallet, mint)
@@ -134,9 +135,9 @@ pub mod test {
 
         assert_eq!(
             parsed_response,
-            get_mint_promo_tx::ResponseData {
+            get_mint_promo1_tx::ResponseData {
                 transaction,
-                message: "You've got a promo!".to_string(),
+                message: "Approve to receive promo.".to_string(),
             }
         );
     }

@@ -15,6 +15,7 @@ export type State = {
     products: Products;
     shopPromos: ShopPromos;
     shopTotal: ShopTotal;
+    mintEvent: MintEvent;
 };
 
 export type Action =
@@ -27,7 +28,8 @@ export type Action =
     | { tokenAccounts: State['tokenAccounts'] }
     | { products: State['products'] }
     | { shopPromos: State['shopPromos'] }
-    | { shopTotal: State['shopTotal'] };
+    | { shopTotal: State['shopTotal'] }
+    | { mintEvent: State['mintEvent'] };
 
 export type TokenAccounts = {
     [key: string]: TokenAccount | null;
@@ -61,4 +63,9 @@ export type ShopPromo = {
 
 export type ShopPromos = {
     [key: string]: ShopPromo;
+};
+
+export type MintEvent = {
+    slot: number;
+    mintString: string;
 };

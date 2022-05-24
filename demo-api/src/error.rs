@@ -12,7 +12,7 @@ use axum::{
 /// Errors propagated by library functions.
 #[derive(Error, Debug)]
 pub enum AppError {
-    #[error("deep hash item is not a list")]
+    #[error("generic error")]
     GenericError,
     #[error("bincode: {0}")]
     BincodeError(#[from] Box<bincode::ErrorKind>),

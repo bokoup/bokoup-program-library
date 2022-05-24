@@ -11,12 +11,13 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-import { Context, getPromoExtended, getTokenAccount } from '../Store';
+import { Context, getPromoExtended, getTokenAccount, PROMO1, PROMO2 } from '../Store';
 import { Attribute } from '@bokoup/bpl-token-metadata';
-import { PublicKey } from '@solana/web3.js';
+import { encodeURL } from '@solana/pay';
+import { QRCodeSVG } from 'qrcode.react';
+
 
 export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
-    // console.log("rendered", seriesParam.metadataInfo.name);
     const { state, dispatch } = useContext(Context);
 
     function getExplorerLink(address: string): string {
@@ -34,6 +35,20 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         }
         return link;
     }
+
+
+    let promoNo;
+    switch (mintString) {
+        case PROMO1:
+            promoNo = 1;
+            break
+        case PROMO2:
+            promoNo = 2;
+            break
+        default:
+            promoNo = 1;
+    }
+
     const promoExtended = state.promoExtendeds[mintString];
     const tokenAccount = state.tokenAccounts[mintString];
 
@@ -43,7 +58,6 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         { traitType: 'burned', value: promoExtended.burns },
         { traitType: 'maxMint', value: promoExtended.maxMint! },
         { traitType: 'maxBurn', value: promoExtended.maxBurn! },
-        { traitType: 'expiry', value: promoExtended.expiry!.toISOString().split('T')[0] },
     ];
 
     const myStats: Attribute[] = [{ traitType: 'owned', value: tokenAccount ? Number(tokenAccount.amount) : 0 }];
@@ -55,26 +69,14 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
             .mintPromoToken(promoExtended.mintAccount.address)
             .then(() =>
                 Promise.all([
-                    getPromoExtended(state, dispatch, promoExtended),
                     getTokenAccount(state, dispatch, promoExtended.mintAccount.address),
                 ])
             );
     };
 
-    async function handleQRCode(mint: PublicKey) {
-        const url = new URL('promo', process.env.REACT_APP_API_URL!);
-        let response = await fetch(url.toString(),
-            {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ account: state.wallet.publicKey.toString(), mint: mint.toString() })
-            }
-        );
-        console.log(await response.json());
-    };
+    const url = encodeURL({
+        link: new URL(`promo${promoNo}`, process.env.REACT_APP_API_URL!),
+    })
 
     return (
         <Grid item sm={6}>
@@ -115,9 +117,9 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     <Button variant="contained" disabled={!state.walletConnected} color="primary" onClick={handleClick}>
                         GET PROMO
                     </Button>
-                    <Button variant="contained" color="primary" onClick={() => handleQRCode(promoExtended.mintAccount.address)}>
-                        QR CODE
-                    </Button>
+                    <Box sx={{ p: 1, ml: 1, backgroundColor: 'white' }} >
+                        <QRCodeSVG value={url.toString()} />
+                    </Box>
                 </CardActions>
             </Card>
         </Grid>
@@ -125,7 +127,6 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
 };
 
 export const PromoCards: FC = () => {
-    console.log("renderPromoCards");
     const { state } = useContext(Context);
     const promoCards = Object.entries(state.promoExtendeds).map(([mintString], i) => (
         <PromoCard key={i} mintString={mintString} />
