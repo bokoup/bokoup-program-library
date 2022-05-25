@@ -7,9 +7,7 @@ import {
     AdminSettings,
     Network,
     PromoExtendeds,
-    UI,
-    Promo,
-    PromoExtended,
+    UI
 } from '@bokoup/bpl-token-metadata';
 import { AnchorProvider, BN } from '@project-serum/anchor';
 import { Keypair, Transaction } from '@solana/web3.js';

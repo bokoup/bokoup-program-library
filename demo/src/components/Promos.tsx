@@ -75,7 +75,7 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     };
 
     const url = encodeURL({
-        link: new URL(`promo${promoNo}`, process.env.REACT_APP_API_URL!),
+        link: new URL(`promo/${promoExtended.mintAccount.address.toString()}/${promoExtended.metadataJson.name}`, process.env.REACT_APP_API_URL!),
     })
 
     return (
@@ -113,12 +113,24 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     <Stats stats={stats} title={'STATS'} />
                     {state.walletConnected ? <Stats stats={myStats} title="MY PROMOS" /> : null}
                 </CardContent>
-                <CardActions sx={{ justifyContent: 'center', mb: 2 }}>
+                <CardActions sx={{ justifyContent: 'space-evenly', mb: 2 }}>
                     <Button variant="contained" disabled={!state.walletConnected} color="primary" onClick={handleClick}>
                         GET PROMO
                     </Button>
-                    <Box sx={{ p: 1, ml: 1, backgroundColor: 'white' }} >
-                        <QRCodeSVG value={url.toString()} />
+                    <Box sx={{ pt: 1, px: 1, backgroundColor: 'white' }} >
+                        <QRCodeSVG
+                            value={url.toString()}
+                            size={100}
+                            bgColor='transparent'
+                            imageSettings={{
+                                src: 'https://solana.com/favicon.ico',
+                                x: undefined,
+                                y: undefined,
+                                height: 20,
+                                width: 20,
+                                excavate: true,
+                            }}
+                        />
                     </Box>
                 </CardActions>
             </Card>

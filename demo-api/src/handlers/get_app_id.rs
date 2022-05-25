@@ -1,15 +1,21 @@
-use crate::error::AppError;
-use axum::{extract::Query, Json};
+use crate::{error::AppError, handlers::Params};
+use axum::{extract::Path, Json};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 pub const LABEL: &str = "Demo";
 pub const ICON: &str = "https://arweave.net/47oYXF2a6izPAaimwCalKShQ_YXqydX3fjm0cjWLbts";
 
 pub async fn handler(
-    Query(params): Query<HashMap<String, String>>,
+    Path(Params {
+        mint_string,
+        promo_name,
+    }): Path<Params>,
 ) -> Result<Json<ResponseData>, AppError> {
-    log::debug!("get_app_id: {:?}", params);
+    log::debug!(
+        "get_app_id:mint_string: {}, promo_name: {}",
+        mint_string,
+        promo_name
+    );
     Ok(Json(ResponseData {
         label: LABEL.to_string(),
         icon: ICON.to_string(),
