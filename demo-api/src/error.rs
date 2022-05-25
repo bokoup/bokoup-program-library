@@ -1,5 +1,6 @@
 use anchor_lang::solana_program::pubkey::ParsePubkeyError;
 use serde_json::json;
+use solana_sdk::signature::SignerError;
 use thiserror::Error;
 
 use axum::{
@@ -16,8 +17,20 @@ pub enum AppError {
     GenericError,
     #[error("bincode: {0}")]
     BincodeError(#[from] Box<bincode::ErrorKind>),
-    #[error("bincode: {0}")]
+    #[error("pubkey error")]
     PubkeyError(#[from] ParsePubkeyError),
+    #[error("reqwest: {0}")]
+    Reqwest(#[from] reqwest::Error),
+    #[error("serde json: {0}")]
+    SerdeJson(#[from] serde_json::Error),
+    #[error("signing error")]
+    SignError(#[from] SignerError),
+    #[error("error confirming posted solana transaction: {0}")]
+    SolanaGetError(reqwest::Error),
+    #[error("solana hash parse {0}")]
+    SolanaHashParse(#[from] solana_sdk::hash::ParseHashError),
+    #[error("error posting solana transaction: {0}")]
+    SolanaPostError(reqwest::Error),
 }
 
 impl IntoResponse for AppError {

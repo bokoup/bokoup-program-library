@@ -11,7 +11,7 @@ pub async fn handler(
         promo_name,
     }): Path<Params>,
 ) -> Result<Json<ResponseData>, AppError> {
-    log::debug!(
+    tracing::debug!(
         "get_app_id:mint_string: {}, promo_name: {}",
         mint_string,
         promo_name

@@ -95,7 +95,7 @@ pub struct CreatePromo<'info> {
     #[account(init, payer = payer, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump,
         constraint = promo_data.owner == payer.key(),
         space = Promo::LEN)]
-    pub promo: Box<Account<'info, Promo>>,
+    pub promo: Account<'info, Promo>,
     /// CHECK: pubkey checked via constraint
     #[account(mut, constraint = platform.key() == admin_settings.platform)]
     pub platform: UncheckedAccount<'info>,
@@ -111,8 +111,8 @@ pub struct CreatePromo<'info> {
 pub struct MintPromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    // #[account(mut, constraint = promo_owner.key() == promo.owner)]
-    // pub promo_owner: Signer<'info>,
+    #[account(mut, constraint = promo_owner.key() == promo.owner)]
+    pub promo_owner: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK: pubkey checked via seeds
@@ -149,8 +149,8 @@ pub struct DelegatePromoToken<'info> {
 pub struct BurnPromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    // #[account(mut, constraint = promo_owner.key() == promo.owner)]
-    // pub promo_owner: Signer<'info>,
+    #[account(mut, constraint = promo_owner.key() == promo.owner)]
+    pub promo_owner: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK: pubkey checked via seeds

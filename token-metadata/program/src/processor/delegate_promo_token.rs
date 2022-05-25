@@ -1,4 +1,4 @@
-use crate::{error::ProgramError, DelegatePromoToken};
+use crate::DelegatePromoToken;
 use anchor_lang::prelude::*;
 
 impl<'info> DelegatePromoToken<'info> {
