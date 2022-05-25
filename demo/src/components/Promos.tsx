@@ -1,4 +1,4 @@
-import React, { FC, useContext, Fragment } from 'react';
+import { FC, useContext, Fragment } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -11,10 +11,12 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-import { Context, getTokenAccount, PROMO1, PROMO2 } from '../Store';
+import { Context, getTokenAccount } from '../Store';
 import { Attribute } from '@bokoup/bpl-token-metadata';
+import { Keypair } from '@solana/web3.js';
 import { encodeURL } from '@solana/pay';
 import { QRCodeSVG } from 'qrcode.react';
+import { debug } from 'console';
 
 export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     const { state, dispatch } = useContext(Context);
@@ -48,11 +50,14 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
 
     const myStats: Attribute[] = [{ traitType: 'owned', value: tokenAccount ? Number(tokenAccount.amount) : 0 }];
 
-    // const promoOwnerKeypair = getDemoKeypair(process.env.REACT_APP_PROMO_OWNER_KEYPAIR);
+    // demo only - not secure
+    const promoOwner = Keypair.fromSecretKey(
+        new Uint8Array(JSON.parse(process.env.REACT_APP_PROMO_OWNER_KEYPAIR!)),
+    );
 
     async function handleClick() {
         await state.program
-            .mintPromoToken(promoExtended.mintAccount.address)
+            .mintPromoToken(promoExtended.mintAccount.address, promoOwner)
             .then(() => Promise.all([getTokenAccount(state, dispatch, promoExtended.mintAccount.address)]));
     }
 

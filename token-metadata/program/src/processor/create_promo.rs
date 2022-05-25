@@ -40,7 +40,7 @@ impl<'info> CreatePromo<'info> {
             metadata_data.into(),
         )?;
 
-        **self.promo = promo_data;
+        *self.promo = promo_data;
         Ok(())
     }
 }

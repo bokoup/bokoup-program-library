@@ -156,20 +156,17 @@ export class TokenMetadataProgram {
    * @return Address of promo account
    */
   // no promo owner as signer for demo
-  async mintPromoToken(
-    mint: PublicKey,
-    // promoOwner: Keypair,
-  ): Promise<PublicKey> {
+  async mintPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
       .mintPromoToken()
       .accounts({
         mint,
-        // promoOwner: promoOwner.publicKey,
+        promoOwner: promoOwner.publicKey,
         tokenAccount,
       })
-      // .signers([promoOwner])
+      .signers([promoOwner])
       .rpc();
 
     return tokenAccount;
@@ -202,7 +199,7 @@ export class TokenMetadataProgram {
   async burnPromoToken(
     platform: PublicKey,
     mint: PublicKey,
-    // promoOwner: Keypair,
+    promoOwner: Keypair,
   ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
@@ -210,11 +207,11 @@ export class TokenMetadataProgram {
       .burnPromoToken()
       .accounts({
         mint,
-        // promoOwner: promoOwner.publicKey,
+        promoOwner: promoOwner.publicKey,
         tokenAccount,
         platform,
       })
-      // .signers([promoOwner])
+      .signers([promoOwner])
       .rpc();
 
     return tokenAccount;
@@ -231,7 +228,7 @@ export class TokenMetadataProgram {
   async delegateAndBurnPromoTokens(
     platform: PublicKey,
     mints: PublicKey[],
-    // promoOwner: Keypair,
+    promoOwner: Keypair,
   ): Promise<PublicKey[]> {
     const tx = new Transaction();
     const tokenAccounts: PublicKey[] = [];
@@ -244,13 +241,13 @@ export class TokenMetadataProgram {
         this.program.methods.delegatePromoToken().accounts({ promo, tokenAccount }).instruction(),
         this.program.methods
           .burnPromoToken()
-          .accounts({ mint, tokenAccount, platform })
+          .accounts({ mint, tokenAccount, platform, promoOwner: promoOwner.publicKey })
           .instruction(),
       ]);
       ixs.forEach((ix) => tx.add(ix));
       tokenAccounts.push(tokenAccount);
     }
-    await this.program.provider.sendAndConfirm!(tx);
+    await this.program.provider.sendAndConfirm!(tx, [promoOwner]);
     return tokenAccounts;
   }
 

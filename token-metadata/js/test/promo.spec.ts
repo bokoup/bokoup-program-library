@@ -3,6 +3,7 @@ import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended } from '../s
 import { PublicKey, Keypair, Transaction } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
+const fs = require('fs');
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 import * as dotenv from 'dotenv';
@@ -12,10 +13,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../../demo/.env') });
 describe('promo', () => {
   const provider = anchor.AnchorProvider.env();
   // Configure the client to use the local cluster.
-  anchor.setProvider(provider);
+  // anchor.setProvider(provider);
   const tokenMetadataProgram = new TokenMetadataProgram(provider);
   const promoOwner = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(process.env.REACT_APP_PROMO_OWNER_KEYPAIR!)),
+    new Uint8Array(JSON.parse(fs.readFileSync('/keys/promo_owner-keypair.json'))),
   );
   const platform = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(process.env.REACT_APP_PLATFORM_KEYPAIR!)),
@@ -124,10 +125,7 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(
-        mint,
-        // promoOwner
-      )
+      .mintPromoToken(mint, promoOwner)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -159,11 +157,7 @@ describe('promo', () => {
       );
 
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .burnPromoToken(
-        platform.publicKey,
-        mint,
-        // promoOwner
-      )
+      .burnPromoToken(platform.publicKey, mint, promoOwner)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -189,16 +183,9 @@ describe('promo', () => {
   });
 
   it('Delegates and burns a promo token', async () => {
-    await tokenMetadataProgram.mintPromoToken(
-      mint,
-      // promoOwner
-    );
+    await tokenMetadataProgram.mintPromoToken(mint, promoOwner);
 
-    await tokenMetadataProgram.delegateAndBurnPromoTokens(
-      platform.publicKey,
-      [mint],
-      // promoOwner
-    );
+    await tokenMetadataProgram.delegateAndBurnPromoTokens(platform.publicKey, [mint], promoOwner);
 
     promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
     expect(promoExtended.burns).to.equal(2, 'Promo burns incorrect.');

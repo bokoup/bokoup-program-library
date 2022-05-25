@@ -2,16 +2,17 @@
 # Change mint to address of local test solana wallet address
 # Change bpf-program to be id from anchor program
 
+BPF_PROGRAM=FtccGbN7AXvtqWP5Uf6pZ9xMdAyA7DXBmRQtmvjGDX7x
+WALLET=61mVTaw6hBtwWnSaGXRSJePFWEQqipeCka3evytEVNUp
+
 anchor build
 cargo build -p bpl-indexer
 solana-test-validator \
 --reset \
 --ledger .anchor/test-ledger \
---mint 61mVTaw6hBtwWnSaGXRSJePFWEQqipeCka3evytEVNUp \
+--mint $WALLET \
 --bind-address 0.0.0.0 \
---bpf-program \
-    3rgtdHtt9gMsmcpjFQDzdFvU6BsuSjbb2oYcoy78kDQB \
-    target/deploy/bpl_token_metadata.so \
+--bpf-program $BPF_PROGRAM target/deploy/bpl_token_metadata.so \
 --clone metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s \
 --clone PwDiXFxQsGra4sFFTT8r1QWRMd4vfumiWC1jfWNfdYT \
 --rpc-port 8899 \

@@ -19,6 +19,8 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
+import { Keypair } from '@solana/web3.js';
+
 import { Context, getTokenAccounts, PROMO1, PROMO2 } from '../Store';
 import { Action, Product, Products, ShopTotal, State, ShopPromos, ShopPromo } from '../types/types';
 import { PromoExtendeds } from '@bokoup/bpl-token-metadata';
@@ -241,6 +243,10 @@ export const PromoRows: FC<{
 
 export const Shop: FC = () => {
     const { state, dispatch } = useContext(Context);
+    // demo only - not secure
+    const promoOwner = Keypair.fromSecretKey(
+        new Uint8Array(JSON.parse(process.env.REACT_APP_PROMO_OWNER_KEYPAIR!)),
+    );
 
     function handleQuantityChange(event: React.ChangeEvent<HTMLInputElement>) {
         const products = Object.assign({}, state.products);
@@ -253,7 +259,7 @@ export const Shop: FC = () => {
         const mints = Object.values(state.shopPromos).map((shopPromo) => shopPromo.mint);
         if (mints) {
             const platform = await state.program.fetchPlatformAddress();
-            await state.program.delegateAndBurnPromoTokens(platform, mints);
+            await state.program.delegateAndBurnPromoTokens(platform, mints, promoOwner);
             const [promoExtendeds] = await Promise.all([
                 state.program.updatePromoExtendeds(state.promoExtendeds),
                 getTokenAccounts(state, dispatch),
