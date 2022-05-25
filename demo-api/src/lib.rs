@@ -77,7 +77,7 @@ pub mod test {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/promo")
+                    .uri("/promo/ding/dong")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -112,7 +112,7 @@ pub mod test {
             .oneshot(
                 Request::builder()
                     .method(Method::POST)
-                    .uri("/promo")
+                    .uri(format!("/promo/{}/dong", mint.to_string()))
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(Body::from(serde_json::to_vec(&data).unwrap()))
                     .unwrap(),
@@ -138,7 +138,7 @@ pub mod test {
             parsed_response,
             get_mint_promo_tx::ResponseData {
                 transaction,
-                message: "Approve to receive promo.".to_string(),
+                message: "Approve to receive dong.".to_string(),
             }
         );
     }

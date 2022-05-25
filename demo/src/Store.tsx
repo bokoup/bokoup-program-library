@@ -2,13 +2,7 @@ import React, { createContext, useReducer, ReactNode, FC, useEffect } from 'reac
 import { Action, State, TokenAccounts, ShopPromos, MintEvent } from './types/types';
 import { initialProducts, initialShopTotal, getShopTotal, getShopPromos } from './components/Shop';
 import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
-import {
-    TokenMetadataProgram,
-    AdminSettings,
-    Network,
-    PromoExtendeds,
-    UI
-} from '@bokoup/bpl-token-metadata';
+import { TokenMetadataProgram, AdminSettings, Network, PromoExtendeds, UI } from '@bokoup/bpl-token-metadata';
 import { AnchorProvider, BN } from '@project-serum/anchor';
 import { Keypair, Transaction } from '@solana/web3.js';
 import { AnchorWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
@@ -33,8 +27,7 @@ export const dummyWallet: AnchorWallet = {
         return [] as Transaction[];
     },
 };
-const network = process.env.REACT_APP_NETWORK_URL as Network
-    || 'https://api.devnet.solana.com' as Network;
+const network = (process.env.REACT_APP_NETWORK_URL as Network) || ('https://api.devnet.solana.com' as Network);
 const connection = new Connection(network, confirmOptions);
 const provider = new AnchorProvider(connection, dummyWallet, confirmOptions);
 const program = new TokenMetadataProgram(provider);
@@ -57,7 +50,7 @@ const initialState: State = {
     products: initialProducts,
     shopPromos: {} as ShopPromos,
     shopTotal: initialShopTotal,
-    mintEvent: {} as MintEvent
+    mintEvent: {} as MintEvent,
 };
 
 const Reducer = (state: State, action: Action): State => {
@@ -78,13 +71,15 @@ export async function getPromoExtended(state: State, dispatch: React.Dispatch<Ac
     console.log(mintString);
 
     if (state.promoExtendeds[mintString]) {
-        promoExtendeds[mintString] = await state.program.getPromoExtended(new PublicKey(mintString))
+        promoExtendeds[mintString] = await state.program.getPromoExtended(new PublicKey(mintString));
         dispatch({ promoExtendeds });
     }
 }
 
 export async function getPromoExtendeds(state: State, dispatch: React.Dispatch<Action>) {
-    const promoExtendeds = await state.program.getPromoExtendeds([PROMO1, PROMO2].map(mintString => new PublicKey(mintString)));
+    const promoExtendeds = await state.program.getPromoExtendeds(
+        [PROMO1, PROMO2].map((mintString) => new PublicKey(mintString))
+    );
     dispatch({ promoExtendeds });
 }
 
@@ -122,10 +117,10 @@ export function getDemoKeypair(secretKeyString: string): Keypair {
 }
 
 const Store: FC<{ children: ReactNode }> = ({ children }) => {
-    console.log("renderStore");
+    console.log('renderStore');
     const [state, dispatch] = useReducer(Reducer, initialState);
 
-    let wallet = useAnchorWallet();
+    const wallet = useAnchorWallet();
     useEffect(() => {
         dispatch({ wallet: wallet ? wallet : dummyWallet, walletConnected: wallet ? true : false });
     }, [wallet]);
@@ -134,7 +129,6 @@ const Store: FC<{ children: ReactNode }> = ({ children }) => {
         const connection = new Connection(state.network, confirmOptions);
         dispatch({ connection });
     }, [state.network]);
-
 
     useEffect(() => {
         let provider = new AnchorProvider(state.connection, dummyWallet, confirmOptions);
@@ -171,10 +165,10 @@ const Store: FC<{ children: ReactNode }> = ({ children }) => {
         getAdminSettings(state, dispatch);
         getPromoExtendeds(state, dispatch);
         getTokenAccounts(state, dispatch);
-        state.program.program.addEventListener("MintEvent", (event, slot) => {
+        state.program.program.addEventListener('MintEvent', (event, slot) => {
             const mintEvent = { mintString: event.mint, slot } as MintEvent;
-            dispatch({ mintEvent })
-        })
+            dispatch({ mintEvent });
+        });
     }, []);
 
     return <Context.Provider value={{ state, dispatch }}>{children}</Context.Provider>;

@@ -11,11 +11,10 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-import { Context, getPromoExtended, getTokenAccount, PROMO1, PROMO2 } from '../Store';
+import { Context, getTokenAccount, PROMO1, PROMO2 } from '../Store';
 import { Attribute } from '@bokoup/bpl-token-metadata';
 import { encodeURL } from '@solana/pay';
 import { QRCodeSVG } from 'qrcode.react';
-
 
 export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     const { state, dispatch } = useContext(Context);
@@ -26,27 +25,14 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
         switch (state.network) {
             case 'http://127.0.0.1:8899':
                 link = `${baseUrl}/${address}?cluster=custom&customUrl=${encodeURIComponent(state.network)}`;
-                break
+                break;
             case 'https://api.devnet.solana.com':
                 link = `${baseUrl}/${address}?cluster=devnet`;
-                break
+                break;
             default:
                 link = `${baseUrl}/${address}?cluster=devnet`;
         }
         return link;
-    }
-
-
-    let promoNo;
-    switch (mintString) {
-        case PROMO1:
-            promoNo = 1;
-            break
-        case PROMO2:
-            promoNo = 2;
-            break
-        default:
-            promoNo = 1;
     }
 
     const promoExtended = state.promoExtendeds[mintString];
@@ -67,16 +53,15 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
     async function handleClick() {
         await state.program
             .mintPromoToken(promoExtended.mintAccount.address)
-            .then(() =>
-                Promise.all([
-                    getTokenAccount(state, dispatch, promoExtended.mintAccount.address),
-                ])
-            );
-    };
+            .then(() => Promise.all([getTokenAccount(state, dispatch, promoExtended.mintAccount.address)]));
+    }
 
     const url = encodeURL({
-        link: new URL(`promo/${promoExtended.mintAccount.address.toString()}/${promoExtended.metadataJson.name}`, process.env.REACT_APP_API_URL!),
-    })
+        link: new URL(
+            `promo/${promoExtended.mintAccount.address.toString()}/${promoExtended.metadataJson.name}`,
+            process.env.REACT_APP_API_URL!
+        ),
+    });
 
     return (
         <Grid item sm={6}>
@@ -117,11 +102,11 @@ export const PromoCard: FC<{ mintString: string }> = ({ mintString }) => {
                     <Button variant="contained" disabled={!state.walletConnected} color="primary" onClick={handleClick}>
                         GET PROMO
                     </Button>
-                    <Box sx={{ pt: 1, px: 1, backgroundColor: 'white' }} >
+                    <Box sx={{ pt: 1, px: 1, backgroundColor: 'white' }}>
                         <QRCodeSVG
                             value={url.toString()}
                             size={100}
-                            bgColor='transparent'
+                            bgColor="transparent"
                             imageSettings={{
                                 src: 'https://solana.com/favicon.ico',
                                 x: undefined,

@@ -40,26 +40,26 @@ export type Products = {
 };
 
 export type Product = {
-    name: string,
-    description: string,
-    src: '*.png',
-    price: number,
-    quantity: number,
-    total: number,
+    name: string;
+    description: string;
+    src: '*.png';
+    price: number;
+    quantity: number;
+    total: number;
 };
 
 export type ShopTotal = {
-    quantity: number,
-    subtotal: number,
+    quantity: number;
+    subtotal: number;
     discount: number;
-    total: number,
+    total: number;
 };
 
 export type ShopPromo = {
-    mint: PublicKey,
-    discount: number,
-    applied: number
-}
+    mint: PublicKey;
+    discount: number;
+    applied: number;
+};
 
 export type ShopPromos = {
     [key: string]: ShopPromo;

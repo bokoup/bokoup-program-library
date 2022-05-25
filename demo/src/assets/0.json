@@ -1,1 +1,16 @@
-{"name":"Promo 1","symbol":"P1","description":"Spend 1 SOL, Get 25% Off. Spend 1 SOL or more and get 25% off.","seller_fee_basis_points":0,"attributes":[{"trait_type":"uses","value":"1"},{"trait_type":"transferrable","value":"yes"}],"collection":{"name":"Promo 1","family":"bokoup"},"properties":{"category":"image","files":[{"uri":"https://arweave.net/sOODZ8VCiwZ0VFI1onS08ftS98hbeWyWPeKMbvR7teg","type":"image/png"}]},"image":"https://arweave.net/sOODZ8VCiwZ0VFI1onS08ftS98hbeWyWPeKMbvR7teg"}
+{
+    "name": "Promo 1",
+    "symbol": "P1",
+    "description": "Spend 1 SOL, Get 25% Off. Spend 1 SOL or more and get 25% off.",
+    "seller_fee_basis_points": 0,
+    "attributes": [
+        { "trait_type": "uses", "value": "1" },
+        { "trait_type": "transferrable", "value": "yes" }
+    ],
+    "collection": { "name": "Promo 1", "family": "bokoup" },
+    "properties": {
+        "category": "image",
+        "files": [{ "uri": "https://arweave.net/sOODZ8VCiwZ0VFI1onS08ftS98hbeWyWPeKMbvR7teg", "type": "image/png" }]
+    },
+    "image": "https://arweave.net/sOODZ8VCiwZ0VFI1onS08ftS98hbeWyWPeKMbvR7teg"
+}
