@@ -1,0 +1,20 @@
+<h3>{{ block.settings.heading }}</h3>
+<p>{{section.id}}</p>
+<div id="wallet-connect"></div>
+<script type="module" src="{{ 'index.8548fef1.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+"name": "t:blocks.wallet-connect.name",
+"templates": ["cart"],
+"target": "section",
+"settings": [
+{
+"id": "heading",
+"type": "text",
+"label": "t:blocks.product-reviews.settings.heading.label",
+"default": "NFT Offers"
+}
+]
+}
+{% endschema %}
