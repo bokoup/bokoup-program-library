@@ -2,7 +2,7 @@
     "npmClient": "yarn",
     "packages": [
         "token-metadata/js",
-        "demo"
+        "demo-web"
     ],
     "useWorkspaces": true,
     "version": "independent",

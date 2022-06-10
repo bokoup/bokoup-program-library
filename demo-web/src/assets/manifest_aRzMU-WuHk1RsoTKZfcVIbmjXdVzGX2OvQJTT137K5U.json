@@ -1,0 +1,28 @@
+{
+    "0.json": {
+        "id": "BcMdIKu90WtSDrfBIJSdBNHzV8pu0kuIDTSaAWOaB5w",
+        "files": [
+            {
+                "uri": "https://arweave.net/BcMdIKu90WtSDrfBIJSdBNHzV8pu0kuIDTSaAWOaB5w",
+                "type": "application/json"
+            },
+            {
+                "uri": "https://arweave.net/aRzMU-WuHk1RsoTKZfcVIbmjXdVzGX2OvQJTT137K5U/0.json",
+                "type": "application/json"
+            }
+        ]
+    },
+    "1.json": {
+        "id": "2tXi8IptJsypDUK_gMnI66qDV1wY0Ox_bbH8HEWBP1k",
+        "files": [
+            {
+                "uri": "https://arweave.net/2tXi8IptJsypDUK_gMnI66qDV1wY0Ox_bbH8HEWBP1k",
+                "type": "application/json"
+            },
+            {
+                "uri": "https://arweave.net/aRzMU-WuHk1RsoTKZfcVIbmjXdVzGX2OvQJTT137K5U/1.json",
+                "type": "application/json"
+            }
+        ]
+    }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "source": "src/index.html",
+  "license": "MIT",
+  "scripts": {
+    "clean": "shx rm -rf dist .parcel-cache",
+    "update-extension": "rm -rf ../nft-offers-extension/assets && cp -r dist ../nft-offers-extension/assets && rm -f ../nft-offers-extension/assets/index.html",
+    "start": "yarn clean && parcel",
+    "build": "yarn clean && parcel build --no-source-maps && yarn update-extension"
+  },
+  "dependencies": {
+    "@bokoup/bpl-token-metadata": "../../token-metadata/js",
+    "@emotion/react": "^11.9.0",
+    "@emotion/styled": "^11.8.1",
+    "@mui/icons-material": "^5.8.2",
+    "@mui/material": "^5.8.2",
+    "@shopify/polaris": "^9.12.2",
+    "@solana/wallet-adapter-base": "^0.9.5",
+    "@solana/wallet-adapter-material-ui": "^0.16.6",
+    "@solana/wallet-adapter-react": "^0.15.5",
+    "@solana/wallet-adapter-wallets": "^0.16.1",
+    "@solana/web3.js": "^1.43.5",
+    "cross-fetch": "^3.1.5",
+    "notistack": "^2.0.5",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.11",
+    "@types/react-dom": "^18.0.5",
+    "parcel": "^2.6.0",
+    "shx": "^0.3.4"
+  }
+}

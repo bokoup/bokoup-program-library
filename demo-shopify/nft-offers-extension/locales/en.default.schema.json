@@ -1,0 +1,15 @@
+{
+	"blocks": {
+		"wallet-connect": {
+			"name": "Wallet Connect",
+			"settings": {
+				"cart": {
+					"label": "Cart"
+				},
+				"heading": {
+					"label": "Heading"
+				}
+			}
+		}
+	}
+}
