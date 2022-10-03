@@ -7,28 +7,29 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{signer::Signer, transaction::Transaction};
 use std::{str::FromStr, sync::Arc};
 
-use crate::{error::AppError, handlers::Params, utils::create_transfer_promo_instruction, State};
+use crate::{error::AppError, handlers::Params, utils::create_burn_promo_instruction, State};
 
 pub async fn handler(
     Json(data): Json<Data>,
     Path(Params {
         mint_string,
         promo_name,
-        device_id: _,
+        device_id,
     }): Path<Params>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<ResponseData>, AppError> {
     let wallet = Pubkey::from_str(&data.account)?;
     tracing::debug!(
-        "get_mint_promo:mint_string: {}, promo_name: {}",
+        "get_burn_promo:mint_string: {}, promo_name: {}, device_id: {}",
         mint_string,
-        promo_name
+        promo_name,
+        device_id.unwrap_or("none".to_string())
     );
     let mint = Pubkey::from_str(&mint_string)?;
     let instruction =
-        create_transfer_promo_instruction(wallet, mint, state.promo_owner.pubkey()).await?;
+        create_burn_promo_instruction(wallet, mint, state.promo_owner.pubkey(), state.platform)
+            .await?;
 
-    // let tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;
     tx.try_partial_sign(&[&state.promo_owner], latest_blockhash)?;
@@ -37,7 +38,7 @@ pub async fn handler(
 
     Ok(Json(ResponseData {
         transaction,
-        message: format!("Approve to receive {}.", promo_name),
+        message: format!("Approve to use {}.", promo_name),
     }))
 }
 
@@ -46,7 +47,7 @@ pub struct Data {
     pub account: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct ResponseData {
     pub transaction: String,
     pub message: String,

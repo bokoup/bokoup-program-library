@@ -9,6 +9,7 @@ pub async fn handler(
     Path(Params {
         mint_string,
         promo_name,
+        device_id: _,
     }): Path<Params>,
 ) -> Result<Json<ResponseData>, AppError> {
     tracing::debug!(
