@@ -2,5 +2,6 @@
 members=[
   "demo-web-api",
   "indexer",
-  "token-metadata/program"
+  "token-metadata/program",
+  "hasura"
 ]
