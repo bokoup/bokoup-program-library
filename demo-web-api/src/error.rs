@@ -31,6 +31,12 @@ pub enum AppError {
     SolanaHashParse(#[from] solana_sdk::hash::ParseHashError),
     #[error("error posting solana transaction: {0}")]
     SolanaPostError(reqwest::Error),
+    #[error("error posting to clover: {0}")]
+    CloverPostError(reqwest::Error),
+    #[error("error parsing url: {0}")]
+    UrlParseError(url::ParseError),
+    #[error("clover status not OK: {0}")]
+    StatusNotOK(reqwest::StatusCode),
 }
 
 impl IntoResponse for AppError {
