@@ -28,3 +28,4 @@ url = "2.2.2"
 
 [dev-dependencies]
 hyper = { version = "0.14", features = ["full"] }
+dotenv = "0.15"

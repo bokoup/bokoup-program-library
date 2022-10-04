@@ -16,7 +16,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use url::Url;
-use utils::Solana;
+use utils::{clover::Clover, solana::Solana};
 
 pub mod error;
 pub mod handlers;
@@ -24,11 +24,14 @@ pub mod utils;
 
 pub const SOL_URL: &str = "https://api.devnet.solana.com/";
 pub const PLATFORM_ADDRESS: &str = "2R7GkXvQQS4iHptUvQMhDvRSNXL8tAuuASNvCYgz3GQW";
+pub const CLOVER_URL: &str = "https://sandbox.dev.clover.com/v3/apps/";
+pub const CLOVER_APP_ID: &str = "MAC8DQKWCCB1R";
 
 pub struct State {
     pub promo_owner: Keypair,
     pub platform: Pubkey,
     pub solana: Solana,
+    pub clover: Clover,
 }
 
 type SharedState = Arc<State>;
@@ -40,6 +43,14 @@ impl Default for State {
             platform: Pubkey::from_str(PLATFORM_ADDRESS).unwrap(),
             solana: Solana {
                 base_url: SOL_URL.parse::<Url>().unwrap(),
+                client: reqwest::Client::new(),
+            },
+            clover: Clover {
+                base_url: CLOVER_URL
+                    .parse::<Url>()
+                    .unwrap()
+                    .join(format!("{CLOVER_APP_ID}/").as_str())
+                    .unwrap(),
                 client: reqwest::Client::new(),
             },
         }
@@ -59,7 +70,7 @@ pub fn create_app() -> Router {
             post(get_mint_promo_tx::handler),
         )
         .route(
-            "/promo/:mint_string/:promo_name/:device_id",
+            "/promo/:mint_string/:promo_name/:merchant_id",
             post(get_burn_promo_tx::handler),
         )
         .layer(
@@ -103,7 +114,7 @@ pub mod test {
     };
     use solana_sdk::{signer::Signer, transaction::Transaction};
     use tower::ServiceExt;
-    use utils::*;
+    use utils::solana::*;
 
     #[tokio::test]
     async fn test_app_id() {
@@ -189,6 +200,10 @@ pub mod test {
 
     #[tokio::test]
     async fn test_get_burn_promo_tx() {
+        dotenv::dotenv().ok();
+        let merchant_id = std::env::var("CLOVER_MERCHANT_ID").unwrap();
+        println!("merchant_id: {merchant_id}");
+
         let state = State::default();
         let app = create_app();
         let wallet = Pubkey::new_unique();
@@ -202,7 +217,10 @@ pub mod test {
             .oneshot(
                 Request::builder()
                     .method(Method::POST)
-                    .uri(format!("/promo/{}/promo_name/device_id", mint.to_string()))
+                    .uri(format!(
+                        "/promo/{}/promo_name/{merchant_id}",
+                        mint.to_string()
+                    ))
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(Body::from(serde_json::to_vec(&data).unwrap()))
                     .unwrap(),

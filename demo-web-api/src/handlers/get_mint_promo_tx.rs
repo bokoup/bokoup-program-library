@@ -7,14 +7,16 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{signer::Signer, transaction::Transaction};
 use std::{str::FromStr, sync::Arc};
 
-use crate::{error::AppError, handlers::Params, utils::create_transfer_promo_instruction, State};
+use crate::{
+    error::AppError, handlers::Params, utils::solana::create_transfer_promo_instruction, State,
+};
 
 pub async fn handler(
     Json(data): Json<Data>,
     Path(Params {
         mint_string,
         promo_name,
-        device_id: _,
+        merchant_id: _,
     }): Path<Params>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<ResponseData>, AppError> {

@@ -8,5 +8,5 @@ pub mod get_mint_promo_tx;
 pub struct Params {
     pub mint_string: String,
     pub promo_name: String,
-    pub device_id: Option<String>,
+    pub merchant_id: Option<String>,
 }
