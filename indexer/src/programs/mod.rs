@@ -1,1 +1,1 @@
-pub mod ppl_token;
+pub mod bpl_token_metadata;
