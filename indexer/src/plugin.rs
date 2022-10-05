@@ -115,9 +115,11 @@ impl GeyserPlugin for Plugin {
                 );
 
                 match account {
-                    update if account.owner == programs::ppl_token::ID.as_ref() => {
+                    update if account.owner == programs::bpl_token_metadata::ID.as_ref() => {
                         let mut update = update.clone();
-                        smol::block_on(async { programs::ppl_token::process(&mut update).await })?;
+                        smol::block_on(async {
+                            programs::bpl_token_metadata::process(&mut update).await
+                        })?;
                     }
                     _ => (),
                 }

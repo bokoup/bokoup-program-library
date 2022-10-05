@@ -285,6 +285,16 @@ impl anchor_lang::AccountDeserialize for Metadata {
     }
 }
 
+// impl mpl_token_metadata::state::TokenMetadataAccount for Metadata {
+//     fn key() -> mpl_token_metadata::state::Key {
+//         mpl_token_metadata::state::Key::MetadataV1
+//     }
+
+//     fn size() -> usize {
+//         mpl_token_metadata::state::MAX_METADATA_LEN
+//     }
+// }
+
 impl anchor_lang::AccountSerialize for Metadata {}
 
 impl anchor_lang::Owner for Metadata {

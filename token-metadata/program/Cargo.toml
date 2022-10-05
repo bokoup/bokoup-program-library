@@ -17,11 +17,10 @@ default = []
 test-bpf = []
 
 [dependencies]
-anchor-lang = { version = "0.24.2", features=["init-if-needed"]  }
-anchor-spl = { version = "0.24.2" }
-mpl-token-metadata = { version = "1.2.7", features = ["no-entrypoint"] }
+anchor-lang = { workspace = true, features= ["init-if-needed"]  }
+anchor-spl = { workspace = true }
+mpl-token-metadata = { workspace = true }
 
 [dev-dependencies]
-solana-sdk = "~1.9.15"
-solana-program-test = "~1.9.15"
-anchor-client = { version = "0.24.2" }
+solana-sdk = { workspace = true }
+anchor-client = { workspace = true }
