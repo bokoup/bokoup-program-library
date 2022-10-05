@@ -1,8 +1,0 @@
-{
-    "libpath": "target/debug/libbpl_indexer.so",
-    "accounts_selector": {
-        "owners": [
-            "CsmkSwyBPpihA6qiNGKtWR3DV6RNxJKBo4xBMPt414Eq"
-        ]
-    }
-}
