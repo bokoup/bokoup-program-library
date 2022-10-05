@@ -1,3 +1,4 @@
+cargo-features = ["workspace-inheritance"]
 [package]
 name = "bpl-token-metadata"
 version = "0.1.0"
@@ -19,7 +20,7 @@ test-bpf = []
 [dependencies]
 anchor-lang = { workspace = true, features= ["init-if-needed"]  }
 anchor-spl = { workspace = true }
-mpl-token-metadata = { workspace = true }
+mpl-token-metadata = { workspace = true, features = [ "no-entrypoint" ] }
 
 [dev-dependencies]
 solana-sdk = { workspace = true }

@@ -8,7 +8,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 import * as dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../../demo/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../demo-web/.env') });
 
 describe('promo', () => {
   const provider = anchor.AnchorProvider.env();

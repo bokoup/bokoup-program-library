@@ -1,3 +1,4 @@
+cargo-features = ["workspace-inheritance"]
 [package]
 name = "demo-api"
 version = "0.1.0"
@@ -11,7 +12,7 @@ anchor-spl = { workspace = true }
 axum = "0.5.6"
 base64 = { workspace = true }
 bincode = { workspace = true }
-bpl-token-metadata = { workspace = true }
+bpl-token-metadata = { path = "../token-metadata/program" }
 futures = "0.3"
 reqwest = { version = "0.11.10",  features = ["json"] }
 serde = { workspace = true }

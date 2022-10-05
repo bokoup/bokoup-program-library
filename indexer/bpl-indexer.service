@@ -1,0 +1,30 @@
+# https://www.freedesktop.org/software/systemd/man/systemd.service.html
+
+[Unit]
+Description=bpl-indexer service
+ConditionPathExists=/home/caleb/bokoup-program-library/target/release/bpl-indexer
+After=network.target
+
+[Service]
+Type=simple
+User=caleb
+Group=caleb
+
+Restart=on-failure
+
+WorkingDirectory=/home/caleb/bokoup-program-library/target/release
+ExecStart=/home/caleb/bokoup-program-library/target/release/bpl_indexer
+
+StandardOutput=syslog
+StandardError=inherit
+SyslogIdentifier=SyslogIdentifier=bpl-indexer
+
+# # make sure log directory exists and owned by syslog
+# PermissionsStartOnly=true
+# ExecStartPre=/bin/mkdir -p /var/log/bpl-indexer-worker
+# ExecStartPre=/bin/chown syslog:adm /var/log/bpl-indexer
+# ExecStartPre=/bin/chmod 755 /var/log/bpl-indexer-worker
+# SyslogIdentifier=bpl-indexer
+
+[Install]
+WantedBy=multi-user.target
