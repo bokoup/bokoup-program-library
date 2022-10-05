@@ -17,12 +17,5 @@ StandardOutput=syslog
 StandardError=inherit
 SyslogIdentifier=SyslogIdentifier=nats-server
 
-# make sure log directory exists and owned by syslog
-# PermissionsStartOnly=true
-# ExecStartPre=/bin/mkdir -p /var/log/nats-server
-# ExecStartPre=/bin/chown syslog:adm /var/log/nats-server
-# ExecStartPre=/bin/chmod 755 /var/log/nats-server
-# SyslogIdentifier=nats-server
-
 [Install]
 WantedBy=multi-user.target

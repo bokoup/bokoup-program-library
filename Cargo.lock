@@ -578,14 +578,10 @@ dependencies = [
  "deadpool-postgres",
  "dotenv",
  "futures",
- "gql_client",
  "log",
  "mpl-auction-house",
  "mpl-token-metadata",
- "reqwest",
  "serde",
- "serde_json",
- "solana-sdk",
  "spl-token",
  "tokio",
  "tokio-postgres",
@@ -616,8 +612,6 @@ dependencies = [
  "serde_bytes",
  "serde_derive",
  "serde_json",
- "solana-geyser-plugin-interface",
- "solana-logger",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1531,18 +1525,6 @@ name = "gimli"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22030e2c5a68ec659fde1e949a745124b48e6fa8b045b7ed5bd1fe4ccc5c4e5d"
-
-[[package]]
-name = "gql_client"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2ad0b978ded703acd23762f99e0f701450c9d0066912c0d7f9bf65bf017d87d"
-dependencies = [
- "log",
- "reqwest",
- "serde",
- "serde_json",
-]
 
 [[package]]
 name = "h2"
@@ -3515,18 +3497,6 @@ dependencies = [
  "quote 1.0.21",
  "rustc_version",
  "syn 1.0.101",
-]
-
-[[package]]
-name = "solana-geyser-plugin-interface"
-version = "1.9.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c68b6a45d728f3c3d83f824b88a581caf3f3a55fea1bcb26c3b317ef150d279"
-dependencies = [
- "log",
- "solana-sdk",
- "solana-transaction-status",
- "thiserror",
 ]
 
 [[package]]

@@ -9,20 +9,18 @@ anchor-spl = { workspace = true }
 bpl-token-metadata = { path = "../token-metadata/program" }
 bs58 = { workspace = true }
 clap = { workspace = true }
-deadpool-postgres = { workspace = true }
 dotenv = { workspace = true }
 futures = { workspace = true }
-gql_client = "1.0.4"
 log = "0.4.17"
 mpl-auction-house = { workspace = true }
 mpl-token-metadata = { workspace = true, features = [ "no-entrypoint" ] }
-reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"]}
-serde_json = { workspace = true }
-solana-sdk = {workspace = true }
 spl-token = { workspace = true }
 tokio = { version = "1.18.2", features = ["full"] }
 tokio-postgres = "=0.7.6"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 url = { workspace = true }
+
+[dev-dependencies]
+deadpool-postgres = { workspace = true }
