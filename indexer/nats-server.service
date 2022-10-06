@@ -1,6 +1,6 @@
 [Unit]
 Description=nats-server service
-ConditionPathExists=/usr/bin/nats-server
+ConditionPathExists=/usr/local/bin/nats-server
 After=network.target
 
 [Service]
@@ -9,9 +9,7 @@ User=caleb
 Group=caleb
 
 Restart=on-failure
-
-WorkingDirectory=/home/caleb/geyser-plugin-nats
-ExecStart=/usr/bin/nats-server
+ExecStart=/usr/local/bin/nats-server
 
 StandardOutput=syslog
 StandardError=inherit

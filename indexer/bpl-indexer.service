@@ -3,17 +3,18 @@
 [Unit]
 Description=bpl-indexer service
 ConditionPathExists=/home/caleb/bokoup-program-library/target/release/bpl-indexer
-After=network.target
+After=nats-server.service
 
 [Service]
 Type=simple
 User=caleb
 Group=caleb
 
+Environment=PG_PASSWORD_LOCALNET=
+
 Restart=on-failure
 
-WorkingDirectory=/home/caleb/bokoup-program-library/target/release
-ExecStart=/home/caleb/bokoup-program-library/target/release/bpl_indexer
+ExecStart=/home/caleb/bokoup-program-library/target/release/bpl-indexer
 
 StandardOutput=syslog
 StandardError=inherit
