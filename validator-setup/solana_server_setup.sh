@@ -71,11 +71,11 @@ mkdir /var/log/sol
 chown -R sol:sol /mnt/solana-ledger
 chown -R sol:sol /var/log/sol
 
-cp /home/caleb/bokoup-program-library/solana_validator_setup.sh /home/sol/
+cp /home/caleb/bokoup-program-library/validator-setup/solana_validator_setup.sh /home/sol/
 cp /home/caleb/bokoup-program-library/target/release/bpl-indexer /home/sol/
 cp /home/caleb/geyser-plugin-nats/target/release/libgeyser_plugin_nats.so /home/sol/
 
-echo `{
+echo '{
     "libpath": "/home/sol/libgeyser_plugin_nats.so",
     "addresses": [
         "FtccGbN7AXvtqWP5Uf6pZ9xMdAyA7DXBmRQtmvjGDX7x",
@@ -83,10 +83,11 @@ echo `{
         "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
         "hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk"
     ]
-}` > /home/sol/config.json
+}' > /home/sol/config.json
 
 chown -R sol:sol /home/sol/
 chmod -R 711 /home/sol/solana_validator_setup.sh
+su - sol -s solana_validator_setup.sh
 
 #Create the nats service
 echo '[Unit]
@@ -161,7 +162,7 @@ User=sol
 LimitNOFILE=1000000
 LogRateLimitIntervalSec=0
 Environment="PATH=/bin:/usr/bin:/home/sol/.local/share/solana/install/active_release/bin"
-ExecStart=/home/sol/bin/validator-testnet.sh
+ExecStart=/home/sol/bin/validator-devnet.sh
 ExecStop=/home/sol/.local/share/solana/install/active_release/bin/solana-validator --ledger /mnt/solana-ledger/ exit -f
 
 [Install]

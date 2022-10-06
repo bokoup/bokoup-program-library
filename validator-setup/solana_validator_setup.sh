@@ -92,6 +92,7 @@ echo '--full-snapshot-interval-slots 10000 \
 --incremental-snapshot-interval-slots 500 \
 --maximum-incremental-snapshots-to-retain 20 \
 --maximum-local-snapshot-age 1000 \
+--minimal-snapshot-download-speed 100000000 \
 --ledger /mnt/solana-ledger \
 --dynamic-port-range 8000-8020 \
 --no-voting \
