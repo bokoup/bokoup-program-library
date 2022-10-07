@@ -14,7 +14,7 @@ apt upgrade -y
 #apt dist-upgradevault read -field=public_key ssh-client-signer/config/ca > /etc/ssh/trusted-user-ca-keys.pem
 
 
-apt install vim screen htop curl ufw jq -y
+apt install vim screen htop curl ufw jq build-essential pkg-config libssl-dev -y
 
 #Enable Firewall
 ufw allow ssh
@@ -71,9 +71,15 @@ mkdir /var/log/sol
 chown -R sol:sol /mnt/solana-ledger
 chown -R sol:sol /var/log/sol
 
-cp /home/caleb/bokoup-program-library/validator-setup/solana_validator_setup.sh /home/sol/
-cp /home/caleb/bokoup-program-library/target/release/bpl-indexer /home/sol/
-cp /home/caleb/geyser-plugin-nats/target/release/libgeyser_plugin_nats.so /home/sol/
+# TODO 
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# TODO add path here so cargo command works
+cargo build --manifest-path /home/ubuntu/bokoup-program-library/Cargo.toml --release
+cargo build --manifest-path /home/ubuntu/geyser-plugin-nats/Cargo.toml --release
+
+cp /home/ubuntu/bokoup-program-library/validator-setup/solana_validator_setup.sh /home/sol/
+cp /home/ubuntu/bokoup-program-library/target/release/bpl-indexer /usr/local/bin
+cp /home/ubuntu/geyser-plugin-nats/target/release/libgeyser_plugin_nats.so /home/sol/
 
 echo '{
     "libpath": "/home/sol/libgeyser_plugin_nats.so",
@@ -89,6 +95,10 @@ chown -R sol:sol /home/sol/
 chmod -R 711 /home/sol/solana_validator_setup.sh
 su - sol -s solana_validator_setup.sh
 
+
+curl -L -O https://github.com/nats-io/nats-server/releases/download/v2.9.2/nats-server-v2.9.2-linux-amd64.tar.gz
+tar xzvf nats-server-v2.9.2-linux-amd64.tar.gz
+
 #Create the nats service
 echo '[Unit]
 [Unit]
@@ -99,7 +109,7 @@ After=network.target
 [Service]
 Type=simple
 Restart=always
-RestartSec=1
+RestartSec=3
 User=sol
 ExecStart=/usr/local/bin/nats-server
 
@@ -115,14 +125,14 @@ After=nats.service
 [Service]
 Type=simple
 Restart=always
-RestartSec=1
+RestartSec=3
 User=sol
 
 Environment=PG_PASSWORD_LOCALNET=
 
 Restart=always
 
-ExecStart=/home/caleb/bokoup-program-library/target/release/bpl-indexer
+ExecStart=/usr/local/bin/bpl-indexer
 
 StandardOutput=syslog
 StandardError=inherit

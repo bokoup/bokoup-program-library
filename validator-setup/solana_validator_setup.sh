@@ -104,8 +104,7 @@ echo '--full-snapshot-interval-slots 10000 \
 --wal-recovery-mode skip_any_corrupted_record \
 --log /var/log/sol/validator.log \
 --accounts /mnt/solana-accounts \
---geyser-plugin-config /home/sol/config.json
-
+--geyser-plugin-config /home/sol/config.json \
 # ledger size will be set to 500GB by default
 --limit-ledger-size \
 
