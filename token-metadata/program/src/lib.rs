@@ -13,7 +13,12 @@ use borsh::BorshDeserialize;
 use state::{AdminSettings, DataV2, Promo};
 use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, PROMO_PREFIX};
 
-declare_id!("FtccGbN7AXvtqWP5Uf6pZ9xMdAyA7DXBmRQtmvjGDX7x");
+declare_id!("CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi");
+
+// also update:
+// Anchor.toml
+// solana_server_setup.sh -> config.json
+// TokenMetadataProgram.ts
 
 #[program]
 pub mod bpl_token_metadata {
@@ -79,6 +84,7 @@ pub struct CreateAdminSettings<'info> {
     pub system_program: Program<'info, System>,
 }
 
+// Here the payer would be the merchant.
 #[derive(Accounts, Clone)]
 #[instruction(promo_data: Promo, metadata_data: DataV2)]
 pub struct CreatePromo<'info> {
@@ -107,12 +113,14 @@ pub struct CreatePromo<'info> {
     pub system_program: Program<'info, System>,
 }
 
+// Here we want to have promo_owner be the payer so that customers don't
+// have to pay anything to receive a token.
 #[derive(Accounts, Clone)]
 pub struct MintPromoToken<'info> {
-    #[account(mut)]
+    #[account(mut, constraint = payer.key() == promo.owner)]
     pub payer: Signer<'info>,
-    #[account(mut, constraint = promo_owner.key() == promo.owner)]
-    pub promo_owner: Signer<'info>,
+    #[account(mut)]
+    pub token_owner: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK: pubkey checked via seeds
@@ -122,7 +130,7 @@ pub struct MintPromoToken<'info> {
     pub promo: Account<'info, Promo>,
     #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Account<'info, AdminSettings>,
-    #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = payer)]
+    #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = token_owner)]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -130,16 +138,19 @@ pub struct MintPromoToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
+// Payer is also promo owner here.
 #[derive(Accounts, Clone)]
 pub struct DelegatePromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut)]
+    pub token_owner: Signer<'info>,
     /// CHECK: pubkey checked via seeds
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
     #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), token_account.mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
-    #[account(mut, constraint = token_account.owner == payer.key())]
+    #[account(mut, constraint = token_account.owner == token_owner.key())]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -147,10 +158,8 @@ pub struct DelegatePromoToken<'info> {
 
 #[derive(Accounts, Clone)]
 pub struct BurnPromoToken<'info> {
-    #[account(mut)]
+    #[account(mut, constraint = payer.key() == promo.owner)]
     pub payer: Signer<'info>,
-    #[account(mut, constraint = promo_owner.key() == promo.owner)]
-    pub promo_owner: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK: pubkey checked via seeds

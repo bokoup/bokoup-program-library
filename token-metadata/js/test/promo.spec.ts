@@ -18,6 +18,8 @@ describe('promo', () => {
   const promoOwner = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(fs.readFileSync('/keys/promo_owner-keypair.json'))),
   );
+  const tokenOwner = Keypair.generate();
+
   const platform = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(process.env.REACT_APP_PLATFORM_KEYPAIR!)),
   );
@@ -94,16 +96,14 @@ describe('promo', () => {
 
       const maxMint = 1_000;
       const maxRedeem = 500;
-      const expiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10);
 
       mint = await tokenMetadataProgram.createPromo(
-        adminSettingsAccount.platform,
+        promoOwner,
         metadataData,
         true,
         maxMint,
         maxRedeem,
-        expiry,
-        promoOwner,
+        adminSettingsAccount.platform,
       );
 
       promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
@@ -125,7 +125,7 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(mint, promoOwner)
+      .mintPromoToken(mint, promoOwner, tokenOwner)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -137,7 +137,7 @@ describe('promo', () => {
 
     expect(Number(tokenAccountAccount.amount)).to.equal(1, 'Token account amount incorrect.');
     expect(Number(mintAccount.supply)).to.equal(1, 'Mint supply incorrect.');
-    expect(promoExtended.mints).to.equal(1, 'Promo mints incorrect.');
+    expect(promoExtended.mintCount).to.equal(1, 'Promo mints incorrect.');
 
     console.log('tokenAccountAccount: ', tokenAccountAccount);
     console.log('mintAccount: ', mintAccount);
@@ -145,9 +145,10 @@ describe('promo', () => {
 
   it('Delegates a promo token', async () => {
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(mint)
+      .delegatePromoToken(mint, promoOwner, tokenOwner)
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
+    console.log('tokenAccountAccount: ', tokenAccountAccount);
   });
 
   it('Burns a promo token', async () => {
@@ -156,8 +157,9 @@ describe('promo', () => {
         adminSettingsAccount.platform,
       );
 
+    console.log("mint", mint);
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .burnPromoToken(platform.publicKey, mint, promoOwner)
+      .burnDelegatedPromoToken(platform.publicKey, mint, promoOwner, tokenOwner.publicKey)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -168,7 +170,7 @@ describe('promo', () => {
     promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
     expect(Number(tokenAccountAccount.amount)).to.equal(0, 'Token account amount incorrect.');
     expect(Number(mintAccount.supply)).to.equal(0, 'Mint supply incorrect.');
-    expect(promoExtended.burns).to.equal(1, 'Promo burns incorrect.');
+    expect(promoExtended.burnCount).to.equal(1, 'Promo burns incorrect.');
 
     const platformAccountInfo =
       await tokenMetadataProgram.program.provider.connection.getAccountInfo(
@@ -183,11 +185,11 @@ describe('promo', () => {
   });
 
   it('Delegates and burns a promo token', async () => {
-    await tokenMetadataProgram.mintPromoToken(mint, promoOwner);
+    await tokenMetadataProgram.mintPromoToken(mint, platform, promoOwner);
 
     await tokenMetadataProgram.delegateAndBurnPromoTokens(platform.publicKey, [mint], promoOwner);
 
     promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
-    expect(promoExtended.burns).to.equal(2, 'Promo burns incorrect.');
+    expect(promoExtended.burnCount).to.equal(2, 'Promo burns incorrect.');
   });
 });

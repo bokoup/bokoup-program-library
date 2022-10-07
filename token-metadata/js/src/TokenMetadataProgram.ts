@@ -12,7 +12,7 @@ import {
   Mint,
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
-import { Promo, DataV2, MetadataJson, AdminSettings, PromoExtendeds } from '.';
+import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds } from '.';
 import { Transaction } from '@metaplex-foundation/mpl-core';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
@@ -32,7 +32,7 @@ export class TokenMetadataProgram {
   payer: Wallet;
 
   constructor(provider: Provider) {
-    this.PUBKEY = new PublicKey('FtccGbN7AXvtqWP5Uf6pZ9xMdAyA7DXBmRQtmvjGDX7x');
+    this.PUBKEY = new PublicKey('CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi');
     this.SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey(
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
     );
@@ -48,6 +48,10 @@ export class TokenMetadataProgram {
     const anchorProvider = this.program.provider as AnchorProvider;
     this.payer = anchorProvider.wallet as Wallet;
   }
+
+  // To keep things straight with promo owner paying for transactions
+  // initiated and signed for by users, always pass and explicit
+  // reference to the payer into accounts.
 
   /**
    * Creates admin settings account
@@ -93,54 +97,47 @@ export class TokenMetadataProgram {
   /**
    * Create promo and associated metadata accounts
    *
-   * @param platform     Platform address
-   * @param metadataData Metadata data
-   * @param isMutable    Whether metadata is mutable
-   * @param maxMint      Max number of tokens to mint
-   * @param maxBurn      Optional max number of tokens that can used
-   * @param expiry       Optional expiration date
-   * @param payer        Optional alternate owner and payer
+   * @param payer         Payer of the transaction, will be the owner of the promo 
+   * @param platform      Platform address
+   * @param metadataData  Metadata data
+   * @param isMutable     Whether metadata is mutable
+   * @param maxMint       Optional Max number of tokens to mint
+   * @param maxRedeemable Optional max number of tokens that can used
    *
    * @return Address of promo account
    */
   async createPromo(
-    platform: PublicKey,
+    promoOwner: Keypair,
     metadataData: DataV2,
     isMutable: boolean,
-    maxMint: number,
-    maxBurn?: number,
-    expiry?: Date,
-    payer?: Keypair,
+    maxMint: number | null,
+    maxBurn: number | null,
+    platform: PublicKey,
   ): Promise<PublicKey> {
     const mint = Keypair.generate();
 
     const [metadata] = await this.findMetadataAddress(mint.publicKey);
 
-    const signers = [mint];
-    let owner = this.payer.publicKey;
-    if (payer != undefined) {
-      owner = payer.publicKey;
-      signers.push(payer);
-    }
-
     const promoData: Promo = {
-      owner,
-      mints: 0,
-      burns: 0,
+      owner: promoOwner.publicKey,
+      mint: mint.publicKey,
+      metadata,
+      mintCount: 0,
+      burnCount: 0,
       maxMint,
-      maxBurn: maxBurn == undefined ? null : maxBurn,
+      maxBurn,
     };
 
     await this.program.methods
       .createPromo(promoData, metadataData, isMutable)
       .accounts({
-        payer: owner,
+        payer: promoOwner.publicKey,
         mint: mint.publicKey,
         metadata,
         platform,
         metadataProgram: METADATA_PROGRAM_ID,
       })
-      .signers(signers)
+      .signers([promoOwner, mint])
       .rpc();
 
     return mint.publicKey;
@@ -156,17 +153,18 @@ export class TokenMetadataProgram {
    * @return Address of promo account
    */
   // no promo owner as signer for demo
-  async mintPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
+  async mintPromoToken(mint: PublicKey, promoOwner: Keypair, tokenOwner: Keypair): Promise<PublicKey> {
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner.publicKey);
 
     await this.program.methods
       .mintPromoToken()
       .accounts({
+        payer: promoOwner.publicKey,
+        tokenOwner: tokenOwner.publicKey,
         mint,
-        promoOwner: promoOwner.publicKey,
         tokenAccount,
       })
-      .signers([promoOwner])
+      .signers([promoOwner, tokenOwner])
       .rpc();
 
     return tokenAccount;
@@ -179,10 +177,16 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
-  async delegatePromoToken(mint: PublicKey): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
+  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair, tokenOwner: Keypair): Promise<PublicKey> {
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner.publicKey);
 
-    await this.program.methods.delegatePromoToken().accounts({ tokenAccount }).rpc();
+    await this.program.methods.delegatePromoToken().accounts({
+      payer: promoOwner.publicKey,
+      tokenOwner: tokenOwner.publicKey,
+      tokenAccount
+    })
+      .signers([promoOwner, tokenOwner])
+      .rpc();
 
     return tokenAccount;
   }
@@ -196,7 +200,7 @@ export class TokenMetadataProgram {
    * @return Token account address
    */
   // no promo owner as signer for demo
-  async burnPromoToken(
+  async burnDelegatedPromoToken(
     platform: PublicKey,
     mint: PublicKey,
     promoOwner: Keypair,
@@ -206,10 +210,10 @@ export class TokenMetadataProgram {
     await this.program.methods
       .burnPromoToken()
       .accounts({
+        payer: promoOwner.publicKey,
         mint,
-        promoOwner: promoOwner.publicKey,
-        tokenAccount,
         platform,
+        tokenAccount,
       })
       .signers([promoOwner])
       .rpc();
@@ -279,16 +283,17 @@ export class TokenMetadataProgram {
         return res.json();
       }),
     ) as MetadataJson;
-    return new PromoExtended(promo, promoAccount, mintAccount, metadataAccount, metadataJson);
+    return new PromoExtendedImpl(promo, promoAccount, mintAccount, metadata, metadataAccount, metadataJson);
   }
 
   async updatePromoExtended(promoExtended: PromoExtended): Promise<PromoExtended> {
     const promoAccount = (await this.program.account.promo.fetch(promoExtended.publicKey)) as Promo;
     const mintAccount = await this.getMintAccount(promoExtended.mintAccount.address);
-    return new PromoExtended(
+    return new PromoExtendedImpl(
       promoExtended.publicKey,
       promoAccount,
       mintAccount,
+      promoExtended.metadata,
       promoExtended.metadataAccount,
       promoExtended.metadataJson,
     );
@@ -355,32 +360,38 @@ export class TokenMetadataProgram {
   }
 }
 
-export class PromoExtended {
-  publicKey: PublicKey;
+export class PromoExtendedImpl implements PromoExtended {
   owner: PublicKey;
+  mint: PublicKey;
+  metadata: PublicKey;
+  mintCount: number;
+  burnCount: number;
+  maxMint: number | null;
+  maxBurn: number | null;
+  publicKey: PublicKey;
   mintAccount: Mint;
   metadataAccount: Metadata;
   metadataJson: MetadataJson;
-  mints: number;
-  burns: number;
-  maxMint: number | null;
-  maxBurn: number | null;
 
   constructor(
     promo: PublicKey,
     promoAccount: Promo,
     mintAccount: Mint,
+    metadata: PublicKey,
     metadataAccount: Metadata,
     metadataJson: MetadataJson,
   ) {
-    this.publicKey = promo;
     this.owner = promoAccount.owner;
+    this.publicKey = promo;
+    this.mint = mintAccount.address;
+    this.metadata = metadata;
     this.mintAccount = mintAccount;
     this.metadataAccount = metadataAccount;
     this.metadataJson = metadataJson;
-    this.mints = promoAccount.mints;
-    this.burns = promoAccount.burns;
+    this.mintCount = promoAccount.mintCount;
+    this.burnCount = promoAccount.burnCount;
     this.maxMint = promoAccount.maxMint;
     this.maxBurn = promoAccount.maxBurn;
+
   }
 }

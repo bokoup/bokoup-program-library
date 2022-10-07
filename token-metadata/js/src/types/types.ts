@@ -1,6 +1,13 @@
 import { BN } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
-import { PromoExtended } from '../';
+
+import {
+  Metadata,
+} from '@metaplex-foundation/mpl-token-metadata';
+import {
+
+  Mint,
+} from '@solana/spl-token';
 
 export type Network =
   | 'http://127.0.0.1:8899'
@@ -20,11 +27,20 @@ export type UI<T> = T & {
 
 export type Promo = {
   owner: PublicKey;
-  mints: number;
-  burns: number;
+  mint: PublicKey,
+  metadata: PublicKey;
+  mintCount: number;
+  burnCount: number;
   maxMint: number | null;
   maxBurn: number | null;
 };
+
+export interface PromoExtended extends Promo {
+  publicKey: PublicKey;
+  mintAccount: Mint;
+  metadataAccount: Metadata;
+  metadataJson: MetadataJson;
+}
 
 export type PromoExtendeds = {
   [key: string]: PromoExtended;

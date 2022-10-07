@@ -1085,6 +1085,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "solana-sdk",
+ "spl-token",
  "thiserror",
  "tokio",
  "tower",

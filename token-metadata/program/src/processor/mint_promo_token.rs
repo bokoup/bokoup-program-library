@@ -9,8 +9,9 @@ impl<'info> MintPromoToken<'info> {
             token_account: self.token_account.key().to_string(),
         });
 
+        // Check to see if mint_count is still below max_mint.
         if let Some(max_mint) = self.promo.max_mint {
-            if self.promo.mints >= max_mint {
+            if self.promo.mint_count >= max_mint {
                 return Err(ProgramError::MaxMintExceeded.into());
             }
         }
@@ -30,7 +31,7 @@ impl<'info> MintPromoToken<'info> {
             1,
         )?;
 
-        self.promo.mints += 1;
+        self.promo.mint_count += 1;
 
         Ok(())
     }
