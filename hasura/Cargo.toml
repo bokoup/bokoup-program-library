@@ -1,26 +1,25 @@
-cargo-features = ["workspace-inheritance"]
 [package]
 name = "bpl-hasura"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anchor-spl = { workspace = true }
+anchor-spl = "0.24.2"
 bpl-token-metadata = { path = "../token-metadata/program" }
-bs58 = { workspace = true }
-clap = { workspace = true }
-dotenv = { workspace = true }
-futures = { workspace = true }
+bs58 = "0.4.0"
+clap = { version="3.2.22", features=["derive"] }
+dotenv = "0.15"
+futures = "0.3"
 log = "0.4.17"
-mpl-auction-house = { workspace = true }
-mpl-token-metadata = { workspace = true, features = [ "no-entrypoint" ] }
-serde = { workspace = true, features = ["derive"]}
-spl-token = { workspace = true }
+mpl-auction-house = { version = "1.1.6", features = ["no-entrypoint"] }
+mpl-token-metadata = { version = "1.2.10", features = [ "no-entrypoint" ]}
+serde = "1.0.130"
+spl-token = "3.2.0"
 tokio = { version = "1.18.2", features = ["full"] }
 tokio-postgres = "=0.7.6"
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-url = { workspace = true }
+tracing = "0.1"
+tracing-subscriber = { version="0.3", features = ["env-filter"] }
+url = "2.2.2"
 
 [dev-dependencies]
-deadpool-postgres = { workspace = true }
+deadpool-postgres= "0.10.2"

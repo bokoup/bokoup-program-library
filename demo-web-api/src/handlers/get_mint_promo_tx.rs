@@ -8,7 +8,7 @@ use solana_sdk::{signer::Signer, transaction::Transaction};
 use std::{str::FromStr, sync::Arc};
 
 use crate::{
-    error::AppError, handlers::Params, utils::solana::create_transfer_promo_instruction, State,
+    error::AppError, handlers::Params, utils::solana::create_mint_promo_instruction, State,
 };
 
 pub async fn handler(
@@ -28,7 +28,7 @@ pub async fn handler(
     );
     let mint = Pubkey::from_str(&mint_string)?;
     let instruction =
-        create_transfer_promo_instruction(wallet, mint, state.promo_owner.pubkey()).await?;
+        create_mint_promo_instruction(wallet, mint, state.promo_owner.pubkey()).await?;
 
     // let tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&wallet));

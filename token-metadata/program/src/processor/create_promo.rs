@@ -15,6 +15,7 @@ impl<'info> CreatePromo<'info> {
     ) -> Result<()> {
         msg!("Create promo");
 
+        // Payer is the promo owner.
         if self.admin_settings.create_promo_lamports > 0 {
             transfer_sol(
                 CpiContext::new(

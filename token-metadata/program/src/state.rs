@@ -28,16 +28,16 @@ impl AdminSettings {
 // Promo
 //==============================
 
-// mint.supply will equal number of issued tokens
-// add max_issue_per account logic
-// add option to restrict transfer - transfer author
-
+// Keeping track of mints and burns here for the convenience of not having to
+// query and aggregate all transactions.
 #[account]
 #[derive(PartialEq, Debug, Copy)]
 pub struct Promo {
     pub owner: Pubkey,
-    pub mints: u32,
-    pub burns: u32,
+    pub mint: Pubkey,
+    pub metadata: Pubkey,
+    pub mint_count: u32,
+    pub burn_count: u32,
     pub max_mint: Option<u32>,
     pub max_burn: Option<u32>,
 }
@@ -45,8 +45,10 @@ pub struct Promo {
 impl Promo {
     pub const LEN: usize = 8
     + 32        // owner
-    + 16        // mints
-    + 16        // burns
+    + 32        // mint
+    + 32        // metadata
+    + 4         // mint_count
+    + 4         // burn_count
     + 1 + 4     // max_mint
     + 1 + 4; // max_redeem
 }

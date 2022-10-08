@@ -178,10 +178,9 @@ pub mod test {
         )
         .unwrap();
 
-        let instruction =
-            create_transfer_promo_instruction(wallet, mint, state.promo_owner.pubkey())
-                .await
-                .unwrap();
+        let instruction = create_mint_promo_instruction(wallet, mint, state.promo_owner.pubkey())
+            .await
+            .unwrap();
 
         let mut tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
         tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)

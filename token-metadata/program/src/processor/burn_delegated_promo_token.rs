@@ -1,13 +1,14 @@
 use crate::utils::transfer_sol;
-use crate::{error::ProgramError, BurnPromoToken, TransferSol};
+use crate::{error::ProgramError, BurnDelegatedPromoToken, TransferSol};
 use anchor_lang::prelude::*;
 
-impl<'info> BurnPromoToken<'info> {
+impl<'info> BurnDelegatedPromoToken<'info> {
     pub fn process(&mut self, authority_seeds: [&[u8]; 2]) -> Result<()> {
-        msg!("Burn promo token");
+        msg!("Burn delegated promo token");
 
+        // Check to see if burn_count is still below max_burn.
         if let Some(max_burn) = self.promo.max_burn {
-            if self.promo.burns >= max_burn {
+            if self.promo.burn_count >= max_burn {
                 return Err(ProgramError::MaxBurnExceeded.into());
             }
         }
@@ -17,7 +18,7 @@ impl<'info> BurnPromoToken<'info> {
                 CpiContext::new(
                     self.system_program.to_account_info(),
                     TransferSol {
-                        payer: self.promo_owner.to_account_info(),
+                        payer: self.payer.to_account_info(),
                         to: self.platform.to_account_info(),
                         system_program: self.system_program.clone(),
                     },
@@ -41,7 +42,7 @@ impl<'info> BurnPromoToken<'info> {
             1,
         )?;
 
-        self.promo.burns += 1;
+        self.promo.burn_count += 1;
 
         Ok(())
     }

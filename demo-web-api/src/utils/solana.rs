@@ -26,10 +26,10 @@ use serde_json::{json, Value};
 use solana_sdk::hash::Hash;
 use std::str::FromStr;
 
-pub async fn create_transfer_promo_instruction(
-    wallet: Pubkey,
+pub async fn create_mint_promo_instruction(
+    payer: Pubkey,
+    token_owner: Pubkey,
     mint: Pubkey,
-    promo_owner: Pubkey,
 ) -> Result<Instruction, AppError> {
     let (
         (authority, _auth_bump),
@@ -40,12 +40,12 @@ pub async fn create_transfer_promo_instruction(
         find_authority_address(),
         find_promo_address(&mint),
         find_admin_address(),
-        find_associated_token_address(&wallet, &mint)
+        find_associated_token_address(&token_owner, &mint)
     );
 
     let accounts = mint_promo_token_accounts {
-        payer: wallet,
-        promo_owner,
+        payer,
+        token_owner,
         mint,
         authority,
         promo,
@@ -68,9 +68,9 @@ pub async fn create_transfer_promo_instruction(
 }
 
 pub async fn create_burn_promo_instruction(
-    wallet: Pubkey,
+    payer: Pubkey,
+    token_owner: Pubkey,
     mint: Pubkey,
-    promo_owner: Pubkey,
     platform: Pubkey,
 ) -> Result<Instruction, AppError> {
     let (
@@ -82,12 +82,11 @@ pub async fn create_burn_promo_instruction(
         find_authority_address(),
         find_promo_address(&mint),
         find_admin_address(),
-        find_associated_token_address(&wallet, &mint)
+        find_associated_token_address(&token_owner, &mint)
     );
 
     let accounts = burn_promo_token_accounts {
-        payer: wallet,
-        promo_owner,
+        payer,
         mint,
         authority,
         promo,
