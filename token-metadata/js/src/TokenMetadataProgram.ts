@@ -192,7 +192,7 @@ export class TokenMetadataProgram {
   }
 
   /**
-   * Burn promo token
+   * Burn delegated promo token
    *
    * @param platform  Platform address
    * @param mint  Mint address
@@ -204,11 +204,12 @@ export class TokenMetadataProgram {
     platform: PublicKey,
     mint: PublicKey,
     promoOwner: Keypair,
+    tokenOnwer: PublicKey
   ): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOnwer);
 
     await this.program.methods
-      .burnPromoToken()
+      .burnDelegatedPromoToken()
       .accounts({
         payer: promoOwner.publicKey,
         mint,
@@ -219,40 +220,6 @@ export class TokenMetadataProgram {
       .rpc();
 
     return tokenAccount;
-  }
-
-  /**
-   * Delegates and burns multiple tokens in a single transaction
-   *
-   * @param mints  Mint addresses
-   *
-   * @return Token account addresses
-   */
-  // no promo owner as signer for demo
-  async delegateAndBurnPromoTokens(
-    platform: PublicKey,
-    mints: PublicKey[],
-    promoOwner: Keypair,
-  ): Promise<PublicKey[]> {
-    const tx = new Transaction();
-    const tokenAccounts: PublicKey[] = [];
-    for (const mint of mints) {
-      const [[tokenAccount], [promo]] = await Promise.all([
-        this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey),
-        this.findPromoAddress(mint),
-      ]);
-      const ixs = await Promise.all([
-        this.program.methods.delegatePromoToken().accounts({ promo, tokenAccount }).instruction(),
-        this.program.methods
-          .burnPromoToken()
-          .accounts({ mint, tokenAccount, platform, promoOwner: promoOwner.publicKey })
-          .instruction(),
-      ]);
-      ixs.forEach((ix) => tx.add(ix));
-      tokenAccounts.push(tokenAccount);
-    }
-    await this.program.provider.sendAndConfirm!(tx, [promoOwner]);
-    return tokenAccounts;
   }
 
   async getTokenAccount(address: PublicKey): Promise<TokenAccount> {

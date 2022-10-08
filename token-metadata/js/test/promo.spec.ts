@@ -184,12 +184,4 @@ describe('promo', () => {
     }
   });
 
-  it('Delegates and burns a promo token', async () => {
-    await tokenMetadataProgram.mintPromoToken(mint, platform, promoOwner);
-
-    await tokenMetadataProgram.delegateAndBurnPromoTokens(platform.publicKey, [mint], promoOwner);
-
-    promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
-    expect(promoExtended.burnCount).to.equal(2, 'Promo burns incorrect.');
-  });
 });

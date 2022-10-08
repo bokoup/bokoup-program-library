@@ -1,8 +1,8 @@
 use crate::utils::transfer_sol;
-use crate::{error::ProgramError, BurnPromoToken, TransferSol};
+use crate::{error::ProgramError, BurnDelegatedPromoToken, TransferSol};
 use anchor_lang::prelude::*;
 
-impl<'info> BurnPromoToken<'info> {
+impl<'info> BurnDelegatedPromoToken<'info> {
     pub fn process(&mut self, authority_seeds: [&[u8]; 2]) -> Result<()> {
         msg!("Burn delegated promo token");
 

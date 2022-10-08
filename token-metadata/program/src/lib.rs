@@ -55,8 +55,8 @@ pub mod bpl_token_metadata {
         ctx.accounts.process()
     }
 
-    pub fn burn_promo_token<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, BurnPromoToken<'info>>,
+    pub fn burn_delegated_promo_token<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, BurnDelegatedPromoToken<'info>>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts.process(authority_seeds)
@@ -157,7 +157,7 @@ pub struct DelegatePromoToken<'info> {
 }
 
 #[derive(Accounts, Clone)]
-pub struct BurnPromoToken<'info> {
+pub struct BurnDelegatedPromoToken<'info> {
     #[account(mut, constraint = payer.key() == promo.owner)]
     pub payer: Signer<'info>,
     #[account(mut)]
