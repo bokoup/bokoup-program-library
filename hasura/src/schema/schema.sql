@@ -9,8 +9,10 @@ DROP TABLE IF EXISTS public.promo CASCADE;
 CREATE TABLE public.promo (
     id text NOT NULL,
     owner text NOT NULL,
-    mints int NOT NULL,
-    burns int NOT NULL,
+    mint text NOT NULL,
+    metadata text NOT NULL,
+    mint_count int NOT NULL,
+    burn_count int NOT NULL,
     max_mint int,
     max_burn int,
     slot bigint NOT NULL,
@@ -200,40 +202,40 @@ CREATE TABLE public.token_account (
 ALTER TABLE ONLY public.token_account
     ADD CONSTRAINT token_account_pkey PRIMARY KEY (id);
 
--- CREATE VIEW public.mint_relation AS
---     WITH t AS (
---         SELECT promo.mint, promo.created_at, ta.owner, ta.amount
---         FROM promo
---         LEFT JOIN token_account ta ON promo.mint = ta.mint
---     )
---     SELECT
---         t1.mint as mint, t2.mint as related_mint,
---         SUM(
---             CASE
---                 WHEN
---                     t1.owner IS NOT NULL
---                     AND t2.owner IS NOT NULL
---                     AND t1.owner = t2.owner
---                 THEN t2.amount
---                 ELSE 0
---             END
---         ) as amount_sum,
---         COUNT(
---             CASE
---                 WHEN
---                     t1.owner IS NOT NULL
---                     AND t2.owner IS NOT NULL
---                     AND t1.owner = t2.owner
---                 THEN t2.amount
---                 ELSE NULL
---             END
---         ) as owner_count,
---         MIN(t2.created_at) AS created_at
---     FROM t AS t1
---     JOIN t as t2
---         ON t1.mint != t2.mint
---     GROUP BY t1.mint, related_mint
---     ORDER BY t1.mint, amount_sum DESC, created_at DESC;
+CREATE VIEW public.mint_relation AS
+    WITH t AS (
+        SELECT promo.mint, promo.created_at, ta.owner, ta.amount
+        FROM promo
+        LEFT JOIN token_account ta ON promo.mint = ta.mint
+    )
+    SELECT
+        t1.mint as mint, t2.mint as related_mint,
+        SUM(
+            CASE
+                WHEN
+                    t1.owner IS NOT NULL
+                    AND t2.owner IS NOT NULL
+                    AND t1.owner = t2.owner
+                THEN t2.amount
+                ELSE 0
+            END
+        ) as amount_sum,
+        COUNT(
+            CASE
+                WHEN
+                    t1.owner IS NOT NULL
+                    AND t2.owner IS NOT NULL
+                    AND t1.owner = t2.owner
+                THEN t2.amount
+                ELSE NULL
+            END
+        ) as owner_count,
+        MIN(t2.created_at) AS created_at
+    FROM t AS t1
+    JOIN t as t2
+        ON t1.mint != t2.mint
+    GROUP BY t1.mint, related_mint
+    ORDER BY t1.mint, amount_sum DESC, created_at DESC;
 
 -- CREATE VIEW public.receipt AS
 --     SELECT pr.id, 'secondary' as receipt_type, metadata.mint, pr.buyer,

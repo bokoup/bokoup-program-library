@@ -6,10 +6,13 @@ const UPSERT_QUERY: &str = include_str!("promo_upsert.sql");
 
 #[tracing::instrument(skip_all)]
 pub async fn upsert(client: &Client, key: &[u8], account: &Promo, slot: u64, write_version: u64) {
+    tracing::info!("jingus{UPSERT_QUERY}");
     let id = bs58::encode(key).into_string();
     let owner = account.owner.to_string();
-    let mints = account.mints as i32;
-    let burns = account.burns as i32;
+    let mint = account.mint.to_string();
+    let metadata = account.metadata.to_string();
+    let mint_count = account.mint_count as i32;
+    let burn_count = account.burn_count as i32;
     let max_mint = account.max_mint.map(|v| v as i32);
     let max_burn = account.max_burn.map(|v| v as i32);
     let slot = slot as i64;
@@ -21,8 +24,10 @@ pub async fn upsert(client: &Client, key: &[u8], account: &Promo, slot: u64, wri
             &[
                 &id,
                 &owner,
-                &mints,
-                &burns,
+                &mint,
+                &metadata,
+                &mint_count,
+                &burn_count,
                 &max_mint,
                 &max_burn,
                 &slot,

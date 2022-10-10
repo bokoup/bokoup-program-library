@@ -169,8 +169,8 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            row.get::<&str, i32>("mints"),
-            promo.mints as i32,
+            row.get::<&str, i32>("mint_count"),
+            promo.mint_count as i32,
             "it_upserts_promo: mints"
         );
     }
@@ -402,8 +402,10 @@ mod tests {
 
         let promo = Promo {
             owner,
-            mints: 0,
-            burns: 0,
+            mint: mint_pubkey,
+            metadata: metadata_pubkey,
+            mint_count: 0,
+            burn_count: 0,
             max_mint: Some(88),
             max_burn: Some(42),
         };

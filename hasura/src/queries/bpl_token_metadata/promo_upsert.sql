@@ -1,19 +1,23 @@
 INSERT INTO promo (
     id,
     owner,
-    mints,
-    burns,
+    mint,
+    metadata,
+    mint_count,
+    burn_count,
     max_mint,
     max_burn,
     slot,
     write_version
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT ON CONSTRAINT promo_pkey DO UPDATE 
     SET
         owner = EXCLUDED.owner,
-        mints = EXCLUDED.mints,
-        burns = EXCLUDED.burns,
+        mint = EXCLUDED.mint,
+        metadata = EXCLUDED.metadata,
+        mint_count = EXCLUDED.mint_count,
+        burn_count = EXCLUDED.burn_count,
         max_mint = EXCLUDED.max_mint,
         max_burn = EXCLUDED.max_burn,
         slot = EXCLUDED.slot,
