@@ -162,7 +162,7 @@ pub struct BurnDelegatedPromoToken<'info> {
     pub payer: Signer<'info>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
-    /// CHECK: pubkey checked via seeds
+    /// CHECK: pubkey checked via spl token program instruction
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
     #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
@@ -170,7 +170,7 @@ pub struct BurnDelegatedPromoToken<'info> {
     /// CHECK: pubkey checked via constraint
     #[account(mut, constraint = platform.key() == admin_settings.platform)]
     pub platform: UncheckedAccount<'info>,
-    #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
+    #[account(seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Account<'info, AdminSettings>,
     #[account(mut,
         constraint = token_account.mint == mint.key(),

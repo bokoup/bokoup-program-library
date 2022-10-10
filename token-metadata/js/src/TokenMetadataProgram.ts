@@ -13,7 +13,6 @@ import {
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
 import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds } from '.';
-import { Transaction } from '@metaplex-foundation/mpl-core';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
 export class TokenMetadataProgram {
@@ -63,7 +62,7 @@ export class TokenMetadataProgram {
   async createAdminSettings(
     platform: Keypair,
     createPromoLamports: number,
-    redeemPromoTokenLamports: number,
+    burnPromoTokenLamports: number,
   ): Promise<PublicKey> {
     const [adminSettings] = await this.findAdminAddress();
 
@@ -71,7 +70,7 @@ export class TokenMetadataProgram {
       .createAdminSettings({
         platform: platform.publicKey,
         createPromoLamports: new BN(createPromoLamports),
-        redeemPromoTokenLamports: new BN(redeemPromoTokenLamports),
+        burnPromoTokenLamports: new BN(burnPromoTokenLamports),
       })
       .accounts({
         payer: platform.publicKey,
@@ -107,7 +106,6 @@ export class TokenMetadataProgram {
    * @return Address of promo account
    */
   async createPromo(
-    promoOwner: Keypair,
     metadataData: DataV2,
     isMutable: boolean,
     maxMint: number | null,
@@ -119,7 +117,7 @@ export class TokenMetadataProgram {
     const [metadata] = await this.findMetadataAddress(mint.publicKey);
 
     const promoData: Promo = {
-      owner: promoOwner.publicKey,
+      owner: this.payer.publicKey,
       mint: mint.publicKey,
       metadata,
       mintCount: 0,
@@ -131,13 +129,12 @@ export class TokenMetadataProgram {
     await this.program.methods
       .createPromo(promoData, metadataData, isMutable)
       .accounts({
-        payer: promoOwner.publicKey,
         mint: mint.publicKey,
         metadata,
         platform,
         metadataProgram: METADATA_PROGRAM_ID,
       })
-      .signers([promoOwner, mint])
+      .signers([mint])
       .rpc();
 
     return mint.publicKey;
@@ -153,18 +150,18 @@ export class TokenMetadataProgram {
    * @return Address of promo account
    */
   // no promo owner as signer for demo
-  async mintPromoToken(mint: PublicKey, promoOwner: Keypair, tokenOwner: Keypair): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner.publicKey);
+  async mintPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
       .mintPromoToken()
       .accounts({
         payer: promoOwner.publicKey,
-        tokenOwner: tokenOwner.publicKey,
+        tokenOwner: this.payer.publicKey,
         mint,
         tokenAccount,
       })
-      .signers([promoOwner, tokenOwner])
+      .signers([promoOwner])
       .rpc();
 
     return tokenAccount;
@@ -177,22 +174,22 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
-  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair, tokenOwner: Keypair): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner.publicKey);
+  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods.delegatePromoToken().accounts({
       payer: promoOwner.publicKey,
-      tokenOwner: tokenOwner.publicKey,
+      tokenOwner: this.payer.publicKey,
       tokenAccount
     })
-      .signers([promoOwner, tokenOwner])
+      .signers([promoOwner])
       .rpc();
 
     return tokenAccount;
   }
 
   /**
-   * Burn delegated promo token
+   * Burn promo token.
    *
    * @param platform  Platform address
    * @param mint  Mint address
@@ -201,22 +198,19 @@ export class TokenMetadataProgram {
    */
   // no promo owner as signer for demo
   async burnDelegatedPromoToken(
-    platform: PublicKey,
     mint: PublicKey,
-    promoOwner: Keypair,
-    tokenOnwer: PublicKey
+    tokenOwner: PublicKey,
+    platform: PublicKey,
   ): Promise<PublicKey> {
-    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOnwer);
+    const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner);
 
     await this.program.methods
       .burnDelegatedPromoToken()
       .accounts({
-        payer: promoOwner.publicKey,
         mint,
         platform,
         tokenAccount,
       })
-      .signers([promoOwner])
       .rpc();
 
     return tokenAccount;

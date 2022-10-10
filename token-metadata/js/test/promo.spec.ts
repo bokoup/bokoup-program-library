@@ -1,6 +1,6 @@
 import * as anchor from '@project-serum/anchor';
 import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended } from '../src';
-import { PublicKey, Keypair, Transaction } from '@solana/web3.js';
+import { PublicKey, Keypair, Transaction, Connection } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
 const fs = require('fs');
@@ -11,14 +11,32 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../demo-web/.env') });
 
 describe('promo', () => {
-  const provider = anchor.AnchorProvider.env();
+  const tokenOwnerProvider = anchor.AnchorProvider.env();
   // Configure the client to use the local cluster.
   // anchor.setProvider(provider);
-  const tokenMetadataProgram = new TokenMetadataProgram(provider);
+  const tokenOwner = tokenOwnerProvider.wallet.publicKey;
+  const tokenMetadataProgram = new TokenMetadataProgram(tokenOwnerProvider);
+
   const promoOwner = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(fs.readFileSync('/keys/promo_owner-keypair.json'))),
   );
-  const tokenOwner = Keypair.generate();
+
+  const process = require("process");
+  const url = process.env.ANCHOR_PROVIDER_URL;
+  if (url === undefined) {
+    throw new Error("ANCHOR_PROVIDER_URL is not defined");
+  }
+  const options = anchor.AnchorProvider.defaultOptions();
+  const connection = new Connection(url, options.commitment);
+  const promoOwnerWallet = new anchor.Wallet(promoOwner)
+
+  const promoOwnerProvider = new anchor.AnchorProvider(
+    connection,
+    promoOwnerWallet,
+    options
+  )
+
+  const tokenMetadataProgramPromoOwner = new TokenMetadataProgram(promoOwnerProvider);
 
   const platform = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(process.env.REACT_APP_PLATFORM_KEYPAIR!)),
@@ -44,9 +62,9 @@ describe('promo', () => {
         }),
       );
     });
-    await provider.sendAndConfirm(transaction);
+    await tokenOwnerProvider.sendAndConfirm(transaction);
     const accountInfos = await Promise.all(
-      addresses.map((address) => provider.connection.getAccountInfo(address)),
+      addresses.map((address) => tokenOwnerProvider.connection.getAccountInfo(address)),
     );
     accountInfos.map((account) => {
       expect(account!.lamports).to.equal(amount, 'Platform lamports incorrect.');
@@ -97,8 +115,7 @@ describe('promo', () => {
       const maxMint = 1_000;
       const maxRedeem = 500;
 
-      mint = await tokenMetadataProgram.createPromo(
-        promoOwner,
+      mint = await tokenMetadataProgramPromoOwner.createPromo(
         metadataData,
         true,
         maxMint,
@@ -125,7 +142,7 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(mint, promoOwner, tokenOwner)
+      .mintPromoToken(mint, promoOwner)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -145,21 +162,21 @@ describe('promo', () => {
 
   it('Delegates a promo token', async () => {
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(mint, promoOwner, tokenOwner)
+      .delegatePromoToken(mint, promoOwner)
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
     console.log('tokenAccountAccount: ', tokenAccountAccount);
   });
 
-  it('Burns a promo token', async () => {
+  it('Burns a delegated promo token', async () => {
     const platformStartAccountInfo =
       await tokenMetadataProgram.program.provider.connection.getAccountInfo(
         adminSettingsAccount.platform,
       );
 
     console.log("mint", mint);
-    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .burnDelegatedPromoToken(platform.publicKey, mint, promoOwner, tokenOwner.publicKey)
+    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgramPromoOwner
+      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),

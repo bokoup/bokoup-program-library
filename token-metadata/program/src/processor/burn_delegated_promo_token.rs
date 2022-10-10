@@ -23,7 +23,7 @@ impl<'info> BurnDelegatedPromoToken<'info> {
                         system_program: self.system_program.clone(),
                     },
                 ),
-                self.admin_settings.create_promo_lamports,
+                self.admin_settings.burn_promo_token_lamports,
             )?;
         }
 
@@ -41,7 +41,6 @@ impl<'info> BurnDelegatedPromoToken<'info> {
             ),
             1,
         )?;
-
         self.promo.burn_count += 1;
 
         Ok(())

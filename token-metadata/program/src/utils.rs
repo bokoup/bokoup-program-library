@@ -98,22 +98,22 @@ pub fn create_master_edition_v3<'a, 'b, 'c, 'info>(
     .map_err(Into::into)
 }
 
-pub async fn find_associated_token_address(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
+pub fn find_associated_token_address(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
     get_associated_token_address(wallet, mint)
 }
 
-pub async fn find_admin_address() -> (Pubkey, u8) {
+pub fn find_admin_address() -> (Pubkey, u8) {
     Pubkey::find_program_address(&[ADMIN_PREFIX.as_bytes()], &crate::id())
 }
 
-pub async fn find_authority_address() -> (Pubkey, u8) {
+pub fn find_authority_address() -> (Pubkey, u8) {
     Pubkey::find_program_address(&[AUTHORITY_PREFIX.as_bytes()], &crate::id())
 }
 
-pub async fn find_promo_address(mint: &Pubkey) -> (Pubkey, u8) {
+pub fn find_promo_address(mint: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[PROMO_PREFIX.as_bytes(), mint.as_ref()], &crate::id())
 }
 
-pub async fn find_metadata_address(mint: &Pubkey) -> (Pubkey, u8) {
+pub fn find_metadata_address(mint: &Pubkey) -> (Pubkey, u8) {
     find_metadata_account(mint)
 }
