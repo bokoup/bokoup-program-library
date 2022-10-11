@@ -8,15 +8,11 @@ pub const ICON: &str = "https://arweave.net/wrKmRzr2KhH92c1iyFeUqkB-AHjYlE7Md7U5
 pub async fn handler(
     Path(Params {
         mint_string,
-        promo_name,
-        merchant_id: _,
+        message,
+        memo,
     }): Path<Params>,
 ) -> Result<Json<ResponseData>, AppError> {
-    tracing::debug!(
-        "get_app_id:mint_string: {}, promo_name: {}",
-        mint_string,
-        promo_name
-    );
+    tracing::debug!(mint_string = mint_string, message = message, memo = memo);
     Ok(Json(ResponseData {
         label: LABEL.to_string(),
         icon: ICON.to_string(),

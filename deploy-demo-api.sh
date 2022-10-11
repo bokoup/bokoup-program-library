@@ -1,10 +1,10 @@
 #!/bin/bash
 
-IMAGE_NAME=us-west1-docker.pkg.dev/bokoup/demo/demo-api
+SERVICE_NAME=demo-api-v2
 
-docker build -t $IMAGE_NAME .
-docker push $IMAGE_NAME
-gcloud beta run deploy demo-api --image $IMAGE_NAME --platform managed --region us-west1 --allow-unauthenticated \
+docker build -t us-west1-docker.pkg.dev/bokoup/demo/$SERVICE_NAME .
+docker push us-west1-docker.pkg.dev/bokoup/demo/$SERVICE_NAME
+gcloud beta run deploy $SERVICE_NAME --image us-west1-docker.pkg.dev/bokoup/demo/$SERVICE_NAME --platform managed --region us-west1 --allow-unauthenticated \
 --min-instances 1 \
 --update-env-vars RUST_LOG=DEBUG \
 --service-account demo-bokoup@bokoup.iam.gserviceaccount.com \

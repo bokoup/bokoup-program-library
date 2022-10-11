@@ -3,7 +3,7 @@ use axum::{
     error_handling::HandleErrorLayer,
     http::{header, Method, StatusCode},
     response::IntoResponse,
-    routing::{get, post},
+    routing::get,
     Router,
 };
 use handlers::*;
@@ -64,14 +64,17 @@ pub fn create_app() -> Router {
         .allow_origin(Any);
 
     Router::new()
-        .route("/promo/:mint_string/:promo_name", get(get_app_id::handler))
         .route(
-            "/promo/:mint_string/:promo_name",
-            post(get_mint_promo_tx::handler),
+            "/promo/mint/:mint_string/:message/:memo",
+            get(get_app_id::handler).post(get_mint_promo_tx::handler),
         )
         .route(
-            "/promo/:mint_string/:promo_name/:merchant_id",
-            post(get_burn_promo_tx::handler),
+            "/promo/delegate/:mint_string/:message/:memo",
+            get(get_app_id::handler).post(get_delegate_promo_tx::handler),
+        )
+        .route(
+            "/promo/burn-delegated/:mint_string/:message/:memo",
+            get(get_app_id::handler).post(get_burn_delegated_promo_tx::handler),
         )
         .layer(
             ServiceBuilder::new()
@@ -115,15 +118,26 @@ pub mod test {
     use solana_sdk::{signer::Signer, transaction::Transaction};
     use tower::ServiceExt;
     use utils::solana::*;
+    const MESSAGE: &str =
+        "This is a really long message that tells you do do something with your $$!!";
+    const MEMO: &str = "Please, listen to my memo.";
 
     #[tokio::test]
     async fn test_app_id() {
         tracing_subscriber::fmt::init();
         let app = create_app();
+        let mint = Pubkey::new_unique();
+        let message = urlencoding::encode(MESSAGE);
+        let memo = urlencoding::encode(MEMO);
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/promo/ding/dong")
+                    .uri(format!(
+                        "/promo/mint/{}/{}/{}",
+                        mint.to_string(),
+                        message.into_owned(),
+                        memo.into_owned()
+                    ))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -148,18 +162,25 @@ pub mod test {
     async fn test_get_mint_promo_tx() {
         let state = State::default();
         let app = create_app();
-        let wallet = Pubkey::new_unique();
+        let token_owner = Pubkey::new_unique();
         let mint = Pubkey::new_unique();
 
         let data = get_mint_promo_tx::Data {
-            account: wallet.to_string(),
+            account: token_owner.to_string(),
         };
+        let message = urlencoding::encode(MESSAGE);
+        let memo = urlencoding::encode(MEMO);
 
         let response = app
             .oneshot(
                 Request::builder()
                     .method(Method::POST)
-                    .uri(format!("/promo/{}/ding", mint.to_string()))
+                    .uri(format!(
+                        "/promo/mint/{}/{}/{}",
+                        mint.to_string(),
+                        message.into_owned(),
+                        memo.into_owned()
+                    ))
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(Body::from(serde_json::to_vec(&data).unwrap()))
                     .unwrap(),
@@ -178,11 +199,12 @@ pub mod test {
         )
         .unwrap();
 
-        let instruction = create_mint_promo_instruction(wallet, mint, state.promo_owner.pubkey())
-            .await
-            .unwrap();
+        let instruction =
+            create_mint_promo_instruction(state.promo_owner.pubkey(), token_owner, mint)
+                .await
+                .unwrap();
 
-        let mut tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&state.promo_owner.pubkey()));
         tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)
             .unwrap();
         let serialized = bincode::serialize(&tx).unwrap();
@@ -192,33 +214,36 @@ pub mod test {
             parsed_response,
             get_mint_promo_tx::ResponseData {
                 transaction,
-                message: "Approve to receive ding.".to_string(),
+                message: MESSAGE.to_string(),
             }
         );
     }
 
     #[tokio::test]
-    async fn test_get_burn_promo_tx() {
+    async fn test_get_delegate_promo_tx() {
         dotenv::dotenv().ok();
-        let merchant_id = std::env::var("CLOVER_MERCHANT_ID").unwrap();
-        println!("merchant_id: {merchant_id}");
 
         let state = State::default();
         let app = create_app();
-        let wallet = Pubkey::new_unique();
+        let token_owner = Pubkey::new_unique();
         let mint = Pubkey::new_unique();
 
         let data = get_mint_promo_tx::Data {
-            account: wallet.to_string(),
+            account: token_owner.to_string(),
         };
+
+        let message = urlencoding::encode(MESSAGE);
+        let memo = urlencoding::encode(MEMO);
 
         let response = app
             .oneshot(
                 Request::builder()
                     .method(Method::POST)
                     .uri(format!(
-                        "/promo/{}/promo_name/{merchant_id}",
-                        mint.to_string()
+                        "/promo/delegate/{}/{}/{}",
+                        mint.to_string(),
+                        message.into_owned(),
+                        memo.into_owned()
                     ))
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(Body::from(serde_json::to_vec(&data).unwrap()))
@@ -230,7 +255,7 @@ pub mod test {
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        let parsed_response: get_burn_promo_tx::ResponseData =
+        let parsed_response: get_burn_delegated_promo_tx::ResponseData =
             serde_json::from_slice(&body).unwrap();
 
         let txd: Transaction = bincode::deserialize(
@@ -239,11 +264,11 @@ pub mod test {
         .unwrap();
 
         let instruction =
-            create_burn_promo_instruction(wallet, mint, state.promo_owner.pubkey(), state.platform)
+            create_delegate_promo_instruction(state.promo_owner.pubkey(), token_owner, mint)
                 .await
                 .unwrap();
 
-        let mut tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&state.promo_owner.pubkey()));
         tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)
             .unwrap();
         let serialized = bincode::serialize(&tx).unwrap();
@@ -251,9 +276,77 @@ pub mod test {
 
         assert_eq!(
             parsed_response,
-            get_burn_promo_tx::ResponseData {
+            get_burn_delegated_promo_tx::ResponseData {
                 transaction,
-                message: "Approve to use promo_name.".to_string(),
+                message: MESSAGE.to_owned(),
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_burn_delegated_promo_tx() {
+        dotenv::dotenv().ok();
+
+        let state = State::default();
+        let app = create_app();
+        let token_owner = Pubkey::new_unique();
+        let mint = Pubkey::new_unique();
+
+        let data = get_mint_promo_tx::Data {
+            account: token_owner.to_string(),
+        };
+
+        let message = urlencoding::encode(MESSAGE);
+        let memo = urlencoding::encode(MEMO);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri(format!(
+                        "/promo/burn-delegated/{}/{}/{}",
+                        mint.to_string(),
+                        message.into_owned(),
+                        memo.into_owned()
+                    ))
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(serde_json::to_vec(&data).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let parsed_response: get_burn_delegated_promo_tx::ResponseData =
+            serde_json::from_slice(&body).unwrap();
+
+        let txd: Transaction = bincode::deserialize(
+            &base64::decode::<String>(parsed_response.transaction.clone()).unwrap(),
+        )
+        .unwrap();
+
+        let instruction = create_burn_delegated_promo_instruction(
+            state.promo_owner.pubkey(),
+            token_owner,
+            mint,
+            state.platform,
+        )
+        .await
+        .unwrap();
+
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&state.promo_owner.pubkey()));
+        tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)
+            .unwrap();
+        let serialized = bincode::serialize(&tx).unwrap();
+        let transaction = base64::encode(serialized);
+
+        assert_eq!(
+            parsed_response,
+            get_burn_delegated_promo_tx::ResponseData {
+                transaction,
+                message: MESSAGE.to_owned(),
             }
         );
     }

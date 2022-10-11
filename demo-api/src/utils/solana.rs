@@ -9,10 +9,13 @@ use anchor_lang::{
 };
 use bpl_token_metadata::{
     accounts::{
-        BurnPromoToken as burn_promo_token_accounts, MintPromoToken as mint_promo_token_accounts,
+        BurnDelegatedPromoToken as burn_delegated_promo_token_accounts,
+        DelegatePromoToken as delegate_promo_token_accounts,
+        MintPromoToken as mint_promo_token_accounts,
     },
     instruction::{
-        BurnPromoToken as burn_promo_token_instruction,
+        BurnDelegatedPromoToken as burn_delegated_promo_token_instruction,
+        DelegatePromoToken as delegate_promo_token_instruction,
         MintPromoToken as mint_promo_token_instruction,
     },
     utils::{
@@ -20,7 +23,6 @@ use bpl_token_metadata::{
         find_promo_address,
     },
 };
-use futures::join;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use solana_sdk::hash::Hash;
@@ -31,17 +33,10 @@ pub async fn create_mint_promo_instruction(
     token_owner: Pubkey,
     mint: Pubkey,
 ) -> Result<Instruction, AppError> {
-    let (
-        (authority, _auth_bump),
-        (promo, _promo_bump),
-        (admin_settings, _admin_bump),
-        token_account,
-    ) = join!(
-        find_authority_address(),
-        find_promo_address(&mint),
-        find_admin_address(),
-        find_associated_token_address(&token_owner, &mint)
-    );
+    let (authority, _auth_bump) = find_authority_address();
+    let (promo, _promo_bump) = find_promo_address(&mint);
+    let (admin_settings, _admin_bump) = find_admin_address();
+    let token_account = find_associated_token_address(&token_owner, &mint);
 
     let accounts = mint_promo_token_accounts {
         payer,
@@ -67,25 +62,47 @@ pub async fn create_mint_promo_instruction(
     })
 }
 
-pub async fn create_burn_promo_instruction(
+pub async fn create_delegate_promo_instruction(
+    payer: Pubkey,
+    token_owner: Pubkey,
+    mint: Pubkey,
+) -> Result<Instruction, AppError> {
+    let (authority, _auth_bump) = find_authority_address();
+    let (promo, _promo_bump) = find_promo_address(&mint);
+    let token_account = find_associated_token_address(&token_owner, &mint);
+
+    let accounts = delegate_promo_token_accounts {
+        payer,
+        token_owner,
+        authority,
+        promo,
+        token_account,
+        token_program: anchor_spl::token::ID,
+        system_program: system_program::ID,
+    }
+    .to_account_metas(Some(true));
+
+    let data = delegate_promo_token_instruction {}.data();
+
+    Ok(Instruction {
+        program_id: bpl_token_metadata::id(),
+        accounts,
+        data,
+    })
+}
+
+pub async fn create_burn_delegated_promo_instruction(
     payer: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
     platform: Pubkey,
 ) -> Result<Instruction, AppError> {
-    let (
-        (authority, _auth_bump),
-        (promo, _promo_bump),
-        (admin_settings, _admin_bump),
-        token_account,
-    ) = join!(
-        find_authority_address(),
-        find_promo_address(&mint),
-        find_admin_address(),
-        find_associated_token_address(&token_owner, &mint)
-    );
+    let (authority, _auth_bump) = find_authority_address();
+    let (promo, _promo_bump) = find_promo_address(&mint);
+    let (admin_settings, _admin_bump) = find_admin_address();
+    let token_account = find_associated_token_address(&token_owner, &mint);
 
-    let accounts = burn_promo_token_accounts {
+    let accounts = burn_delegated_promo_token_accounts {
         payer,
         mint,
         authority,
@@ -100,7 +117,7 @@ pub async fn create_burn_promo_instruction(
     }
     .to_account_metas(Some(true));
 
-    let data = burn_promo_token_instruction {}.data();
+    let data = burn_delegated_promo_token_instruction {}.data();
 
     Ok(Instruction {
         program_id: bpl_token_metadata::id(),

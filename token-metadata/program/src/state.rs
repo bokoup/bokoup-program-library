@@ -21,7 +21,7 @@ impl AdminSettings {
     pub const LEN: usize = 8
     + 32    // platform,
     + 32    // create_promo_lamports,
-    + 32; // redeem_promo_token_lamports
+    + 32; // burn_promo_token_lamports
 }
 
 //==============================
@@ -61,6 +61,15 @@ pub struct MintEvent {
     #[index]
     pub mint: String,
     pub token_account: String,
+}
+
+//==============================
+// MintReceipt
+//==============================
+pub struct MintReceipt {
+    pub mint: Pubkey,
+    pub token_owner: Pubkey,
+    pub memo: String,
 }
 
 //==============================

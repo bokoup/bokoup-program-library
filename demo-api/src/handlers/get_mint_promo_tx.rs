@@ -15,23 +15,19 @@ pub async fn handler(
     Json(data): Json<Data>,
     Path(Params {
         mint_string,
-        promo_name,
-        merchant_id: _,
+        message,
+        memo,
     }): Path<Params>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<ResponseData>, AppError> {
-    let wallet = Pubkey::from_str(&data.account)?;
-    tracing::debug!(
-        "get_mint_promo:mint_string: {}, promo_name: {}",
-        mint_string,
-        promo_name
-    );
-    let mint = Pubkey::from_str(&mint_string)?;
-    let instruction =
-        create_mint_promo_instruction(wallet, mint, state.promo_owner.pubkey()).await?;
+    tracing::debug!(mint_string = mint_string, message = message, memo = memo);
 
-    // let tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
-    let mut tx = Transaction::new_with_payer(&[instruction], Some(&wallet));
+    let token_owner = Pubkey::from_str(&data.account)?;
+    let payer = state.promo_owner.pubkey();
+    let mint = Pubkey::from_str(&mint_string)?;
+    let instruction = create_mint_promo_instruction(payer, token_owner, mint).await?;
+
+    let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;
     tx.try_partial_sign(&[&state.promo_owner], latest_blockhash)?;
     let serialized = bincode::serialize(&tx)?;
@@ -39,7 +35,7 @@ pub async fn handler(
 
     Ok(Json(ResponseData {
         transaction,
-        message: format!("Approve to receive {}.", promo_name),
+        message,
     }))
 }
 

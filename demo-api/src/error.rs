@@ -35,6 +35,8 @@ pub enum AppError {
     CloverPostError(reqwest::Error),
     #[error("error parsing url: {0}")]
     UrlParseError(url::ParseError),
+    #[error("error decoding url encoded string: {0}")]
+    UrlDecodeError(std::string::FromUtf8Error),
     #[error("clover status not OK: {0}")]
     StatusNotOK(reqwest::StatusCode),
 }

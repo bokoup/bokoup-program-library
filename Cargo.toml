@@ -1,6 +1,6 @@
 [workspace]
 members=[
-  "demo-web-api",
+  "demo-api",
   "indexer",
   "token-metadata/program",
   "hasura"
