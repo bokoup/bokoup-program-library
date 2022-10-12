@@ -1,4 +1,4 @@
-use crate::{AccountMessageData, MessageData};
+use crate::AccountMessageData;
 use anchor_lang::AccountDeserialize;
 pub use anchor_spl::token::{spl_token::ID, Mint, TokenAccount};
 use bpl_hasura::{

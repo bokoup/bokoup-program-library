@@ -1,7 +1,9 @@
 use crate::{AccountMessageData, TransactionMessageData};
-use anchor_lang::{prelude::Pubkey, AccountDeserialize};
+use anchor_lang::AccountDeserialize;
 use bpl_hasura::{
-    queries::bpl_token_metadata::{create_promo, promo},
+    queries::bpl_token_metadata::{
+        burn_delegated_promo_token, create_promo, delegate_promo_token, mint_promo_token, promo,
+    },
     Client,
 };
 pub use bpl_token_metadata::{state::Promo, ID};
@@ -33,7 +35,6 @@ pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: AccountM
         _ => (),
     }
 }
-
 #[non_exhaustive]
 #[derive(Debug)]
 pub struct Discriminator;
@@ -63,11 +64,41 @@ pub async fn process_transaction<'a>(
             )
             .await
         }
+        Discriminator::MINT_PROMO_TOKEN => {
+            mint_promo_token::upsert(
+                &pg_client,
+                &message.signature,
+                &message.accounts,
+                &message.data,
+                message.slot,
+            )
+            .await
+        }
+        Discriminator::DELEGATE_PROMO_TOKEN => {
+            delegate_promo_token::upsert(
+                &pg_client,
+                &message.signature,
+                &message.accounts,
+                &message.data,
+                message.slot,
+            )
+            .await
+        }
+        Discriminator::BURN_DELEGATED_PROMO_TOKEN => {
+            burn_delegated_promo_token::upsert(
+                &pg_client,
+                &message.signature,
+                &message.accounts,
+                &message.data,
+                message.slot,
+            )
+            .await
+        }
         _ => {
             tracing::info!(
                 discriminator = format!("{:?}", discriminator),
                 accounts_count = message.accounts.len(),
-                message = "not matched",
+                message = "not found"
             );
         }
     };

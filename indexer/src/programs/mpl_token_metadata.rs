@@ -1,4 +1,4 @@
-use crate::{AccountMessageData, MessageData};
+use crate::AccountMessageData;
 use bpl_hasura::queries::mpl_token_metadata::metadata;
 pub use mpl_token_metadata::{
     state::{Key::MetadataV1, Metadata, MAX_METADATA_LEN},

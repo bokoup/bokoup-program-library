@@ -2,7 +2,7 @@ use solana_sdk::{pubkey::Pubkey, signature::Signature};
 use tokio_postgres::Client;
 use tracing::{error, info};
 
-const UPSERT_QUERY: &str = include_str!("create_promo_upsert.sql");
+const UPSERT_QUERY: &str = include_str!("delegate_promo_token_upsert.sql");
 
 #[tracing::instrument(skip_all)]
 pub async fn upsert(
@@ -16,12 +16,11 @@ pub async fn upsert(
 
     let signature = signature.to_string();
     let payer = &accounts[0];
-    let mint = &accounts[1];
-    let metadata = &accounts[2];
-    let authority = &accounts[3];
-    let promo = &accounts[4];
-    let platform = &accounts[5];
-    let admin_settings = &accounts[6];
+    let token_owner = &accounts[1];
+    let authority = &accounts[2];
+    let promo = &accounts[3];
+    let admin_settings = &accounts[4];
+    let token_account = &accounts[5];
     let slot = slot as i64;
 
     let result = client
@@ -30,12 +29,11 @@ pub async fn upsert(
             &[
                 &signature,
                 payer,
-                mint,
-                metadata,
+                token_owner,
                 authority,
                 promo,
-                platform,
                 admin_settings,
+                token_account,
                 &slot,
             ],
         )

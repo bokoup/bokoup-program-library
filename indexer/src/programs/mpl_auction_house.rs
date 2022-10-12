@@ -1,4 +1,4 @@
-use crate::{AccountMessageData, MessageData};
+use crate::AccountMessageData;
 use anchor_lang::AccountDeserialize;
 use bpl_hasura::queries::mpl_auction_house::{
     auction_house, bid_receipt, listing_receipt, purchase_receipt,

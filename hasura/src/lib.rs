@@ -309,26 +309,47 @@ mod tests {
     // Transactions
     // =============================
 
-    async fn it_upserts_create_promo(
+    async fn it_upserts_transaction(
         client: &Client,
         signature: &Signature,
         accounts: &Vec<Pubkey>,
         data: &[u8],
         slot: u64,
+        table: &str,
     ) {
-        queries::bpl_token_metadata::create_promo::upsert(client, signature, accounts, data, slot)
+        if table == "create_promo" {
+            queries::bpl_token_metadata::create_promo::upsert(
+                client, signature, accounts, data, slot,
+            )
             .await;
+        } else if table == "mint_promo_token" {
+            queries::bpl_token_metadata::mint_promo_token::upsert(
+                client, signature, accounts, data, slot,
+            )
+            .await;
+        } else if table == "delegate_promo_token" {
+            queries::bpl_token_metadata::delegate_promo_token::upsert(
+                client, signature, accounts, data, slot,
+            )
+            .await;
+        } else if table == "burn_delegated_promo_token" {
+            queries::bpl_token_metadata::delegate_promo_token::upsert(
+                client, signature, accounts, data, slot,
+            )
+            .await;
+        }
+
         let row = client
             .query_one(
-                "SELECT * FROM create_promo WHERE signature = $1",
+                &format!("SELECT * FROM {table} WHERE signature = $1"),
                 &[&bs58::encode(signature).into_string()],
             )
             .await
             .unwrap();
         assert_eq!(
-            row.get::<&str, String>("promo_owner"),
+            row.get::<&str, String>("payer"),
             accounts[0].to_string(),
-            "it_upserts_create_promo: promo_owner failed"
+            "it_upsert_{table}: payer failed"
         );
     }
 
@@ -360,11 +381,12 @@ mod tests {
 
         // insert a create_promo transaction
         let data: &[u8] = &[0, 0, 0];
-        let accounts: Vec<Pubkey> = (0..7).map(|_| Pubkey::new_unique()).collect();
-        it_upserts_create_promo(&client, &Signature::default(), &accounts, data, 42).await;
+        let accounts: Vec<Pubkey> = (0..10).map(|_| Pubkey::new_unique()).collect();
 
-        // insert a mint
-        it_upserts_mint(&client, mint_pubkey.as_ref(), &mint, 42, 1).await;
+        for table in vec!["create_promo", "mint_promo_token", "delegate_promo_token"] {
+            it_upserts_transaction(&client, &Signature::default(), &accounts, data, 42, table)
+                .await;
+        }
 
         // update a mint, null out an optional value
         mint.supply = 2;

@@ -26,7 +26,7 @@ ALTER TABLE ONLY public.promo
 DROP TABLE IF EXISTS public.create_promo CASCADE;
 CREATE TABLE public.create_promo (
     signature text NOT NULL,
-    promo_owner text NOT NULL,
+    payer text NOT NULL,
     mint text NOT NULL,
     metadata text NOT NULL,
     authority text NOT NULL,
@@ -39,6 +39,56 @@ CREATE TABLE public.create_promo (
 );
 ALTER TABLE ONLY public.create_promo
     ADD CONSTRAINT create_promo_pkey PRIMARY KEY (signature);
+
+DROP TABLE IF EXISTS public.mint_promo_token CASCADE;
+CREATE TABLE public.mint_promo_token (
+    signature text NOT NULL,
+    payer text NOT NULL,
+    token_owner text NOT NULL,
+    mint text NOT NULL,
+    authority text NOT NULL,
+    promo text NOT NULL,
+    admin_settings text NOT NULL,
+    token_account text NOT NULL,
+    slot bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE ONLY public.mint_promo_token
+    ADD CONSTRAINT mint_promo_token_pkey PRIMARY KEY (signature);
+
+DROP TABLE IF EXISTS public.delegate_promo_token CASCADE;
+CREATE TABLE public.delegate_promo_token (
+    signature text NOT NULL,
+    payer text NOT NULL,
+    token_owner text NOT NULL,
+    authority text NOT NULL,
+    promo text NOT NULL,
+    admin_settings text NOT NULL,
+    token_account text NOT NULL,
+    slot bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE ONLY public.delegate_promo_token
+    ADD CONSTRAINT delegate_promo_token_pkey PRIMARY KEY (signature);
+
+DROP TABLE IF EXISTS public.burn_delegated_promo_token CASCADE;
+CREATE TABLE public.burn_delegated_promo_token (
+    signature text NOT NULL,
+    payer text NOT NULL,
+    mint text NOT NULL,
+    authority text NOT NULL,
+    promo text NOT NULL,
+    platform text NOT NULL,
+    admin_settings text NOT NULL,
+    token_account text NOT NULL,
+    slot bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE ONLY public.burn_delegated_promo_token
+    ADD CONSTRAINT burn_delegated_promo_token_pkey PRIMARY KEY (signature);
 
 -- =============================
 -- mpl_auction_house
