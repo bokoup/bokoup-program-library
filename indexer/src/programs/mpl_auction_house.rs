@@ -1,4 +1,4 @@
-use crate::MessageData;
+use crate::{AccountMessageData, MessageData};
 use anchor_lang::AccountDeserialize;
 use bpl_hasura::queries::mpl_auction_house::{
     auction_house, bid_receipt, listing_receipt, purchase_receipt,
@@ -81,7 +81,7 @@ async fn process_purchase_receipt<'a>(
     }
 }
 
-pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: MessageData<'a>) {
+pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: AccountMessageData<'a>) {
     let key = message.account.pubkey.as_ref();
     let mut buf = message.account.data.as_ref();
     let slot = message.slot;

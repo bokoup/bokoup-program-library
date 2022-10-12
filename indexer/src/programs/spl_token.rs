@@ -1,4 +1,4 @@
-use crate::MessageData;
+use crate::{AccountMessageData, MessageData};
 use anchor_lang::AccountDeserialize;
 pub use anchor_spl::token::{spl_token::ID, Mint, TokenAccount};
 use bpl_hasura::{
@@ -40,7 +40,7 @@ async fn process_token_account<'a>(
     }
 }
 
-pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: MessageData<'a>) {
+pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: AccountMessageData<'a>) {
     let key = message.account.pubkey.as_ref();
     let mut buf = message.account.data.as_ref();
     let slot = message.slot;

@@ -62,6 +62,7 @@ mod tests {
         state::{Collection, Creator, Data, Key, Metadata, TokenStandard, UseMethod, Uses},
     };
 
+    use solana_sdk::signature::Signature;
     use spl_token::{
         solana_program::{program_option::COption, pubkey::Pubkey},
         state::{Account, AccountState, Mint},
@@ -75,6 +76,10 @@ mod tests {
             .unwrap()
             .as_millis() as i64
     }
+
+    // =============================
+    // Accounts
+    // =============================
 
     async fn it_upserts_mint(
         client: &Client,
@@ -300,8 +305,35 @@ mod tests {
         );
     }
 
+    // =============================
+    // Transactions
+    // =============================
+
+    async fn it_upserts_create_promo(
+        client: &Client,
+        signature: &Signature,
+        accounts: &Vec<Pubkey>,
+        data: &[u8],
+        slot: u64,
+    ) {
+        queries::bpl_token_metadata::create_promo::upsert(client, signature, accounts, data, slot)
+            .await;
+        let row = client
+            .query_one(
+                "SELECT * FROM create_promo WHERE signature = $1",
+                &[&bs58::encode(signature).into_string()],
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            row.get::<&str, String>("promo_owner"),
+            accounts[0].to_string(),
+            "it_upserts_create_promo: promo_owner failed"
+        );
+    }
+
     #[tokio::test]
-    async fn it_runs_tests_success() {
+    async fn it_runs_account_tests_success() {
         dotenv::dotenv().ok();
         tracing_subscriber::fmt::init();
 
@@ -325,6 +357,11 @@ mod tests {
 
         let client = pg_pool.get().await.unwrap();
         reset(&client).await.unwrap();
+
+        // insert a create_promo transaction
+        let data: &[u8] = &[0, 0, 0];
+        let accounts: Vec<Pubkey> = (0..7).map(|_| Pubkey::new_unique()).collect();
+        it_upserts_create_promo(&client, &Signature::default(), &accounts, data, 42).await;
 
         // insert a mint
         it_upserts_mint(&client, mint_pubkey.as_ref(), &mint, 42, 1).await;

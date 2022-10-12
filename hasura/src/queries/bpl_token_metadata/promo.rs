@@ -6,7 +6,6 @@ const UPSERT_QUERY: &str = include_str!("promo_upsert.sql");
 
 #[tracing::instrument(skip_all)]
 pub async fn upsert(client: &Client, key: &[u8], account: &Promo, slot: u64, write_version: u64) {
-    tracing::info!("jingus{UPSERT_QUERY}");
     let id = bs58::encode(key).into_string();
     let owner = account.owner.to_string();
     let mint = account.mint.to_string();

@@ -1,14 +1,31 @@
-use programs::{bpl_token_metadata, mpl_auction_house, mpl_token_metadata, spl_token};
+use anchor_lang::prelude::Pubkey;
 use serde::{Deserialize, Serialize};
+use solana_sdk::signature::Signature;
 
 pub mod programs;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct MessageData<'a> {
+pub struct AccountMessageData<'a> {
     #[serde(borrow)]
     pub account: AccountData<'a>,
     pub slot: u64,
     pub is_startup: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TransactionMessageData {
+    pub signature: Signature,
+    pub program_id: Pubkey,
+    pub accounts: Vec<Pubkey>,
+    pub data: Vec<u8>,
+    pub slot: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum MessageData<'a> {
+    #[serde(borrow)]
+    Account(AccountMessageData<'a>),
+    Transaction(TransactionMessageData),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -26,13 +43,22 @@ pub struct AccountData<'a> {
 }
 
 pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: MessageData<'a>) {
-    if message.account.owner == bpl_token_metadata::ID.as_ref() {
-        bpl_token_metadata::process(pg_client, message).await
-    } else if message.account.owner == mpl_auction_house::ID.as_ref() {
-        mpl_auction_house::process(pg_client, message).await
-    } else if message.account.owner == mpl_token_metadata::ID.as_ref() {
-        mpl_token_metadata::process(pg_client, message).await
-    } else if message.account.owner == spl_token::ID.as_ref() {
-        spl_token::process(pg_client, message).await
-    };
+    match message {
+        MessageData::Account(message) => {
+            if message.account.owner == programs::bpl_token_metadata::ID.as_ref() {
+                programs::bpl_token_metadata::process(pg_client, message).await
+            } else if message.account.owner == programs::mpl_auction_house::ID.as_ref() {
+                programs::mpl_auction_house::process(pg_client, message).await
+            } else if message.account.owner == programs::mpl_token_metadata::ID.as_ref() {
+                programs::mpl_token_metadata::process(pg_client, message).await
+            } else if message.account.owner == programs::spl_token::ID.as_ref() {
+                programs::spl_token::process(pg_client, message).await
+            };
+        }
+        MessageData::Transaction(message) => {
+            if message.program_id == programs::bpl_token_metadata::ID {
+                programs::bpl_token_metadata::process_transaction(pg_client, message).await
+            }
+        }
+    }
 }

@@ -23,6 +23,23 @@ CREATE TABLE public.promo (
 ALTER TABLE ONLY public.promo
     ADD CONSTRAINT promo_pkey PRIMARY KEY (id);
 
+DROP TABLE IF EXISTS public.create_promo CASCADE;
+CREATE TABLE public.create_promo (
+    signature text NOT NULL,
+    promo_owner text NOT NULL,
+    mint text NOT NULL,
+    metadata text NOT NULL,
+    authority text NOT NULL,
+    promo text NOT NULL,
+    platform text NOT NULL,
+    admin_settings text NOT NULL,
+    slot bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE ONLY public.create_promo
+    ADD CONSTRAINT create_promo_pkey PRIMARY KEY (signature);
+
 -- =============================
 -- mpl_auction_house
 -- =============================

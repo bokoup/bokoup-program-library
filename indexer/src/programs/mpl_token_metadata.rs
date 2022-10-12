@@ -1,4 +1,4 @@
-use crate::MessageData;
+use crate::{AccountMessageData, MessageData};
 use bpl_hasura::queries::mpl_token_metadata::metadata;
 pub use mpl_token_metadata::{
     state::{Key::MetadataV1, Metadata, MAX_METADATA_LEN},
@@ -22,7 +22,7 @@ async fn process_metadata<'a>(
     }
 }
 
-pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: MessageData<'a>) {
+pub async fn process<'a>(pg_client: deadpool_postgres::Object, message: AccountMessageData<'a>) {
     let key = message.account.pubkey.as_ref();
     let mut data = message.account.data.as_ref();
     let slot = message.slot;

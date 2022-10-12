@@ -39,11 +39,8 @@ async fn main() {
 
     // connect to nats
     let nats_connection = nats::connect(args.nats_url.as_str()).unwrap();
-    let sub = nats_connection.subscribe("update_account").unwrap();
-    tracing::info!(
-        nats_url = args.nats_url.as_str(),
-        suscribed = "update_account"
-    );
+    let sub = nats_connection.subscribe("messages.*").unwrap();
+    tracing::info!(nats_url = args.nats_url.as_str(), suscribed = "messages.*");
 
     // process messages
     for msg in sub.messages() {
