@@ -1,0 +1,22 @@
+table:
+  name: delegate_promo_token
+  schema: public
+object_relationships:
+  - name: promoObject
+    using:
+      manual_configuration:
+        column_mapping:
+          promo: id
+        insertion_order: null
+        remote_table:
+          name: promo
+          schema: public
+  - name: tokenAccountObject
+    using:
+      manual_configuration:
+        column_mapping:
+          token_account: id
+        insertion_order: null
+        remote_table:
+          name: token_account
+          schema: public

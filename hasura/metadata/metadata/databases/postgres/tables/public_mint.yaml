@@ -1,0 +1,23 @@
+table:
+  name: mint
+  schema: public
+object_relationships:
+  - name: promoObject
+    using:
+      manual_configuration:
+        column_mapping:
+          id: mint
+        insertion_order: null
+        remote_table:
+          name: promo
+          schema: public
+array_relationships:
+  - name: tokenAccounts
+    using:
+      manual_configuration:
+        column_mapping:
+          id: mint
+        insertion_order: null
+        remote_table:
+          name: token_account
+          schema: public

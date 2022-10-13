@@ -1,0 +1,22 @@
+table:
+  name: promo
+  schema: public
+object_relationships:
+  - name: metadataObject
+    using:
+      manual_configuration:
+        column_mapping:
+          metadata: id
+        insertion_order: null
+        remote_table:
+          name: metadata
+          schema: public
+  - name: mintObject
+    using:
+      manual_configuration:
+        column_mapping:
+          mint: id
+        insertion_order: null
+        remote_table:
+          name: mint
+          schema: public

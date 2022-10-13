@@ -1,0 +1,3 @@
+table:
+  name: listing_with_token
+  schema: public
