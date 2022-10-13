@@ -98,6 +98,15 @@ pub fn create_master_edition_v3<'a, 'b, 'c, 'info>(
     .map_err(Into::into)
 }
 
+pub fn create_memo(memo: String, account_infos: Vec<AccountInfo>) -> Result<()> {
+    let signer_pubkeys: Vec<&Pubkey> = account_infos
+        .iter()
+        .filter_map(|a| if a.is_signer { Some(a.key) } else { None })
+        .collect();
+    let ix = spl_memo::build_memo(memo.as_bytes(), &signer_pubkeys);
+    anchor_lang::solana_program::program::invoke(&ix, &account_infos).map_err(Into::into)
+}
+
 pub fn find_associated_token_address(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
     get_associated_token_address(wallet, mint)
 }

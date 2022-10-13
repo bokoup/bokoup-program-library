@@ -7,9 +7,10 @@ INSERT INTO create_promo (
     promo,
     platform,
     admin_settings,
+    memo,
     slot
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT ON CONSTRAINT create_promo_pkey DO UPDATE 
     SET
         payer = EXCLUDED.payer,
@@ -19,6 +20,7 @@ ON CONFLICT ON CONSTRAINT create_promo_pkey DO UPDATE
         promo = EXCLUDED.promo,
         platform = EXCLUDED.platform,
         admin_settings = EXCLUDED.admin_settings,
+        memo = EXCLUDED.memo,
         slot = EXCLUDED.slot,
         modified_at = NOW()
     WHERE

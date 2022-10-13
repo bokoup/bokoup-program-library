@@ -10,7 +10,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 use borsh::BorshDeserialize;
-use state::{AdminSettings, DataV2, Promo};
+use state::{AdminSettings, DataV2, Memo, Promo};
 use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, PROMO_PREFIX};
 
 declare_id!("CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi");
@@ -36,30 +36,34 @@ pub mod bpl_token_metadata {
         promo_data: Promo,
         metadata_data: DataV2,
         is_mutable: bool,
+        memo: Option<Memo>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts
-            .process(promo_data, metadata_data, is_mutable, authority_seeds)
+            .process(promo_data, metadata_data, is_mutable, authority_seeds, memo)
     }
 
     pub fn mint_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MintPromoToken<'info>>,
+        memo: Option<Memo>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
-        ctx.accounts.process(authority_seeds)
+        ctx.accounts.process(authority_seeds, memo)
     }
 
     pub fn delegate_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, DelegatePromoToken<'info>>,
+        memo: Option<Memo>,
     ) -> Result<()> {
-        ctx.accounts.process()
+        ctx.accounts.process(memo)
     }
 
     pub fn burn_delegated_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, BurnDelegatedPromoToken<'info>>,
+        memo: Option<Memo>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
-        ctx.accounts.process(authority_seeds)
+        ctx.accounts.process(authority_seeds, memo)
     }
 
     pub fn create_non_fungible(
@@ -109,6 +113,7 @@ pub struct CreatePromo<'info> {
     pub admin_settings: Box<Account<'info, AdminSettings>>,
     pub metadata_program: Program<'info, TokenMetadata>,
     pub token_program: Program<'info, Token>,
+    pub memo_program: Program<'info, SplMemo>,
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
 }
@@ -133,6 +138,7 @@ pub struct MintPromoToken<'info> {
     #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = token_owner)]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
+    pub memo_program: Program<'info, SplMemo>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
@@ -153,6 +159,7 @@ pub struct DelegatePromoToken<'info> {
     #[account(mut, constraint = token_account.owner == token_owner.key())]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
+    pub memo_program: Program<'info, SplMemo>,
     pub system_program: Program<'info, System>,
 }
 
@@ -180,6 +187,7 @@ pub struct BurnDelegatedPromoToken<'info> {
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    pub memo_program: Program<'info, SplMemo>,
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
 }
@@ -273,6 +281,15 @@ pub struct TokenMetadata;
 impl anchor_lang::Id for TokenMetadata {
     fn id() -> Pubkey {
         mpl_token_metadata::ID
+    }
+}
+
+#[derive(Clone)]
+pub struct SplMemo;
+
+impl anchor_lang::Id for SplMemo {
+    fn id() -> Pubkey {
+        spl_memo::ID
     }
 }
 

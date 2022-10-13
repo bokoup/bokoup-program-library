@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anchor-spl = "0.24.2"
 bpl-token-metadata = { path = "../token-metadata/program" }
+borsh = "0.9.3"
 bs58 = "0.4.0"
 clap = { version="3.2.22", features=["derive"] }
 dotenv = "0.15"
@@ -17,7 +18,7 @@ serde = "1.0.130"
 solana-sdk = "1.9.20"
 spl-token = "3.2.0"
 tokio = { version = "1.18.2", features = ["full"] }
-tokio-postgres = "=0.7.6"
+tokio-postgres = {version = "=0.7.6", features = ["with-serde_json-1"] }
 tracing = "0.1"
 tracing-subscriber = { version="0.3", features = ["env-filter"] }
 url = "2.2.2"

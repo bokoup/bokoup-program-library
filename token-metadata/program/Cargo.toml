@@ -19,6 +19,7 @@ test-bpf = []
 [dependencies]
 anchor-lang = { version = "=0.24.2", features= ["init-if-needed"]  }
 anchor-spl = { version = "=0.24.2" }
+borsh = "0.9.3"
 mpl-token-metadata = { version = "=1.2.10", features = [ "no-entrypoint" ] }
 spl-memo = { version = "3.0.1", features = [ "no-entrypoint" ] }
 

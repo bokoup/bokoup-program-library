@@ -1,13 +1,10 @@
-use crate::{error::ProgramError, state::MintEvent, MintPromoToken};
+use crate::utils::create_memo;
+use crate::{error::ProgramError, state::Memo, MintPromoToken};
 use anchor_lang::prelude::*;
 
 impl<'info> MintPromoToken<'info> {
-    pub fn process(&mut self, authority_seeds: [&[u8]; 2]) -> Result<()> {
+    pub fn process(&mut self, authority_seeds: [&[u8]; 2], memo: Option<Memo>) -> Result<()> {
         msg!("Mint promo token");
-        emit!(MintEvent {
-            mint: self.mint.key().to_string(),
-            token_account: self.token_account.key().to_string(),
-        });
 
         // Check to see if mint_count is still below max_mint.
         if let Some(max_mint) = self.promo.max_mint {
@@ -30,6 +27,11 @@ impl<'info> MintPromoToken<'info> {
             ),
             1,
         )?;
+
+        if let Some(memo) = memo {
+            let account_infos = vec![self.payer.to_account_info()];
+            create_memo(memo.to_string(), account_infos)?;
+        }
 
         self.promo.mint_count += 1;
 

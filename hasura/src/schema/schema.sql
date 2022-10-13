@@ -34,6 +34,7 @@ CREATE TABLE public.create_promo (
     platform text NOT NULL,
     admin_settings text NOT NULL,
     slot bigint NOT NULL,
+    memo jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     modified_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -50,6 +51,7 @@ CREATE TABLE public.mint_promo_token (
     promo text NOT NULL,
     admin_settings text NOT NULL,
     token_account text NOT NULL,
+    memo jsonb,
     slot bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     modified_at timestamp with time zone DEFAULT now() NOT NULL
@@ -66,6 +68,7 @@ CREATE TABLE public.delegate_promo_token (
     promo text NOT NULL,
     admin_settings text NOT NULL,
     token_account text NOT NULL,
+    memo jsonb,
     slot bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     modified_at timestamp with time zone DEFAULT now() NOT NULL
@@ -84,6 +87,7 @@ CREATE TABLE public.burn_delegated_promo_token (
     admin_settings text NOT NULL,
     token_account text NOT NULL,
     slot bigint NOT NULL,
+    memo jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     modified_at timestamp with time zone DEFAULT now() NOT NULL
 );
