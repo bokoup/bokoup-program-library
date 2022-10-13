@@ -1,0 +1,3 @@
+table:
+  name: purchase_receipt
+  schema: public

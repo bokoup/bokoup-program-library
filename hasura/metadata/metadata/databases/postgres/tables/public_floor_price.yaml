@@ -1,0 +1,3 @@
+table:
+  name: floor_price
+  schema: public
