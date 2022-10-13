@@ -54,24 +54,6 @@ impl Promo {
 }
 
 //==============================
-// Memo
-//==============================
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
-pub struct Memo {
-    pub reference: String,
-    pub memo: String,
-}
-
-impl ToString for Memo {
-    fn to_string(&self) -> String {
-        format!(
-            "{{\"reference\": \"{}\", \"memo\": \"{}\"}}",
-            self.reference, self.memo
-        )
-    }
-}
-
-//==============================
 // Metadata
 //==============================
 

@@ -12,7 +12,7 @@ import {
   Mint,
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
-import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds, Memo } from '.';
+import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds, } from '.';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
 export class TokenMetadataProgram {
@@ -113,7 +113,7 @@ export class TokenMetadataProgram {
     maxMint: number | null,
     maxBurn: number | null,
     platform: PublicKey,
-    memo: Memo | null
+    memo: string | null
   ): Promise<PublicKey> {
     const mint = Keypair.generate();
 
@@ -154,7 +154,7 @@ export class TokenMetadataProgram {
    * @return Address of promo account
    */
   // no promo owner as signer for demo
-  async mintPromoToken(mint: PublicKey, promoOwner: Keypair, memo: Memo | null): Promise<PublicKey> {
+  async mintPromoToken(mint: PublicKey, promoOwner: Keypair, memo: string | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
@@ -179,7 +179,7 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
-  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair, memo: Memo | null): Promise<PublicKey> {
+  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair, memo: string | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods.delegatePromoToken(memo).accounts({
@@ -207,7 +207,7 @@ export class TokenMetadataProgram {
     mint: PublicKey,
     tokenOwner: PublicKey,
     platform: PublicKey,
-    memo: Memo | null
+    memo: string | null
   ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner);
 

@@ -1,10 +1,9 @@
-use crate::state::Memo;
 use crate::utils::create_memo;
 use crate::DelegatePromoToken;
 use anchor_lang::prelude::*;
 
 impl<'info> DelegatePromoToken<'info> {
-    pub fn process(&mut self, memo: Option<Memo>) -> Result<()> {
+    pub fn process(&mut self, memo: Option<String>) -> Result<()> {
         msg!("Delegate promo token");
 
         let delegate_ctx = anchor_spl::token::Approve {

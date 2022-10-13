@@ -1,5 +1,4 @@
 use clap::ArgEnum;
-use serde::{Deserialize, Serialize};
 pub use tokio_postgres::{types::FromSql, Client, Config, Error, NoTls};
 
 pub mod queries;
@@ -21,37 +20,6 @@ impl DatabaseURL {
                 format!("postgresql://postgres:{pg_password_localnet}@34.71.64.129:5432/postgres")
             }
             DatabaseURL::Devnet => String::from("postgresql://postgres"),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Memo {
-    reference: String,
-    memo: String,
-}
-
-// impl ToString for Memo {
-//     fn to_string() -> String {
-//         format!("reference: {}, memo: {}", self.reference, self.memo)
-//     }
-// }
-
-impl std::fmt::Display for Memo {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "{{\"reference\": \"{}\", \"memo\": \"{}\"}}",
-            self.reference, self.memo
-        )
-    }
-}
-
-impl From<bpl_token_metadata::state::Memo> for Memo {
-    fn from(item: bpl_token_metadata::state::Memo) -> Self {
-        Self {
-            reference: item.reference,
-            memo: item.memo,
         }
     }
 }

@@ -582,7 +582,7 @@ dependencies = [
  "log",
  "mpl-auction-house",
  "mpl-token-metadata",
- "serde",
+ "serde_json",
  "solana-sdk",
  "spl-token",
  "tokio",

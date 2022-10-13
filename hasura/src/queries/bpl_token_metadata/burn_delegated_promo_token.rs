@@ -1,4 +1,3 @@
-use crate::Memo;
 use borsh::de::BorshDeserialize;
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
 use tokio_postgres::{types::Json, Client};
@@ -15,10 +14,16 @@ pub async fn upsert(
     slot: u64,
 ) {
     let accounts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
-    let memo: Option<Memo> = if let Ok(args) =
-        bpl_token_metadata::instruction::BurnDelegatedPromoToken::try_from_slice(data)
+    let memo = if let Ok(args) =
+        bpl_token_metadata::instruction::MintPromoToken::try_from_slice(&data[8..])
     {
-        args.memo.map(Into::into)
+        args.memo.map(|m| {
+            if let Ok(result) = serde_json::from_str::<serde_json::Value>(&m) {
+                result
+            } else {
+                serde_json::json!({ "memo": m })
+            }
+        })
     } else {
         None
     };
@@ -45,7 +50,7 @@ pub async fn upsert(
                 platform,
                 admin_settings,
                 token_account,
-                &Json::<Option<Memo>>(memo),
+                &Json::<Option<serde_json::Value>>(memo),
                 &slot,
             ],
         )

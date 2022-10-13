@@ -10,7 +10,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 use borsh::BorshDeserialize;
-use state::{AdminSettings, DataV2, Memo, Promo};
+use state::{AdminSettings, DataV2, Promo};
 use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, PROMO_PREFIX};
 
 declare_id!("CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi");
@@ -36,7 +36,7 @@ pub mod bpl_token_metadata {
         promo_data: Promo,
         metadata_data: DataV2,
         is_mutable: bool,
-        memo: Option<Memo>,
+        memo: Option<String>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts
@@ -45,7 +45,7 @@ pub mod bpl_token_metadata {
 
     pub fn mint_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MintPromoToken<'info>>,
-        memo: Option<Memo>,
+        memo: Option<String>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts.process(authority_seeds, memo)
@@ -53,14 +53,14 @@ pub mod bpl_token_metadata {
 
     pub fn delegate_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, DelegatePromoToken<'info>>,
-        memo: Option<Memo>,
+        memo: Option<String>,
     ) -> Result<()> {
         ctx.accounts.process(memo)
     }
 
     pub fn burn_delegated_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, BurnDelegatedPromoToken<'info>>,
-        memo: Option<Memo>,
+        memo: Option<String>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
         ctx.accounts.process(authority_seeds, memo)

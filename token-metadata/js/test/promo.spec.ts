@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, Memo } from '../src';
+import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, } from '../src';
 import { PublicKey, Keypair, Transaction, Connection } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
@@ -115,7 +115,7 @@ describe('promo', () => {
       const maxMint = 1_000;
       const maxRedeem = 500;
 
-      const memo: Memo = {
+      const memo = {
         reference: metadataData.symbol,
         memo: "Created new promo"
       };
@@ -126,7 +126,7 @@ describe('promo', () => {
         maxMint,
         maxRedeem,
         adminSettingsAccount.platform,
-        memo
+        JSON.stringify(memo)
       );
 
       promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
@@ -148,7 +148,7 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(mint, promoOwner, null)
+      .mintPromoToken(mint, promoOwner, "just a string for a memo")
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -167,13 +167,15 @@ describe('promo', () => {
   });
 
   it('Delegates a promo token', async () => {
-    const memo: Memo = {
-      reference: "myReference",
-      memo: "delegated token"
+    // try different keys for memo
+    const memo = {
+      source: "spirit",
+      platform: "shoes",
+      location: "here"
     };
 
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(mint, promoOwner, memo)
+      .delegatePromoToken(mint, promoOwner, JSON.stringify(memo))
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
     console.log('tokenAccountAccount: ', tokenAccountAccount);
@@ -186,13 +188,13 @@ describe('promo', () => {
       );
 
     console.log("mint", mint);
-    const memo: Memo = {
+    const memo = {
       reference: "myReference",
       memo: "burned delegated token"
     };
 
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgramPromoOwner
-      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey, memo)
+      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey, JSON.stringify(memo))
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),

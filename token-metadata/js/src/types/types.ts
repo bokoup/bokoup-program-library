@@ -116,8 +116,3 @@ export type MetadataJson = {
     creators?: CreatorJson[];
   };
 };
-
-export type Memo = {
-  reference: string;
-  memo: string;
-}

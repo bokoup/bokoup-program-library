@@ -1,9 +1,9 @@
 use crate::utils::create_memo;
-use crate::{error::ProgramError, state::Memo, MintPromoToken};
+use crate::{error::ProgramError, MintPromoToken};
 use anchor_lang::prelude::*;
 
 impl<'info> MintPromoToken<'info> {
-    pub fn process(&mut self, authority_seeds: [&[u8]; 2], memo: Option<Memo>) -> Result<()> {
+    pub fn process(&mut self, authority_seeds: [&[u8]; 2], memo: Option<String>) -> Result<()> {
         msg!("Mint promo token");
 
         // Check to see if mint_count is still below max_mint.
