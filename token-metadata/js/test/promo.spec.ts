@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended } from '../src';
+import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, Memo } from '../src';
 import { PublicKey, Keypair, Transaction, Connection } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
@@ -115,12 +115,18 @@ describe('promo', () => {
       const maxMint = 1_000;
       const maxRedeem = 500;
 
+      const memo: Memo = {
+        reference: metadataData.symbol,
+        memo: "Created new promo"
+      };
+
       mint = await tokenMetadataProgramPromoOwner.createPromo(
         metadataData,
         true,
         maxMint,
         maxRedeem,
         adminSettingsAccount.platform,
+        memo
       );
 
       promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
@@ -142,7 +148,7 @@ describe('promo', () => {
 
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(mint, promoOwner)
+      .mintPromoToken(mint, promoOwner, null)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -161,8 +167,13 @@ describe('promo', () => {
   });
 
   it('Delegates a promo token', async () => {
+    const memo: Memo = {
+      reference: "myReference",
+      memo: "delegated token"
+    };
+
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(mint, promoOwner)
+      .delegatePromoToken(mint, promoOwner, memo)
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
     console.log('tokenAccountAccount: ', tokenAccountAccount);
@@ -175,8 +186,13 @@ describe('promo', () => {
       );
 
     console.log("mint", mint);
+    const memo: Memo = {
+      reference: "myReference",
+      memo: "burned delegated token"
+    };
+
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgramPromoOwner
-      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey)
+      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey, memo)
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),

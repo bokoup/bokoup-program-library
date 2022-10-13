@@ -7,9 +7,10 @@ INSERT INTO mint_promo_token (
     promo,
     admin_settings,
     token_account,
+    memo,
     slot
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT ON CONSTRAINT mint_promo_token_pkey DO UPDATE 
     SET
         payer = EXCLUDED.payer,
@@ -19,6 +20,7 @@ ON CONFLICT ON CONSTRAINT mint_promo_token_pkey DO UPDATE
         promo = EXCLUDED.promo,
         admin_settings = EXCLUDED.admin_settings,
         token_account = EXCLUDED.token_account,
+        memo = EXCLUDED.memo,
         slot = EXCLUDED.slot,
         modified_at = NOW()
     WHERE

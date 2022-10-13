@@ -54,22 +54,21 @@ impl Promo {
 }
 
 //==============================
-// MintEvent
+// Memo
 //==============================
-#[event]
-pub struct MintEvent {
-    #[index]
-    pub mint: String,
-    pub token_account: String,
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct Memo {
+    pub reference: String,
+    pub memo: String,
 }
 
-//==============================
-// MintReceipt
-//==============================
-pub struct MintReceipt {
-    pub mint: Pubkey,
-    pub token_owner: Pubkey,
-    pub memo: String,
+impl ToString for Memo {
+    fn to_string(&self) -> String {
+        format!(
+            "{{\"reference\": \"{}\", \"memo\": \"{}\"}}",
+            self.reference, self.memo
+        )
+    }
 }
 
 //==============================

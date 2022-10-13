@@ -1,9 +1,9 @@
-use crate::utils::transfer_sol;
-use crate::{error::ProgramError, BurnDelegatedPromoToken, TransferSol};
+use crate::utils::{create_memo, transfer_sol};
+use crate::{error::ProgramError, BurnDelegatedPromoToken, Memo, TransferSol};
 use anchor_lang::prelude::*;
 
 impl<'info> BurnDelegatedPromoToken<'info> {
-    pub fn process(&mut self, authority_seeds: [&[u8]; 2]) -> Result<()> {
+    pub fn process(&mut self, authority_seeds: [&[u8]; 2], memo: Option<Memo>) -> Result<()> {
         msg!("Burn delegated promo token");
 
         // Check to see if burn_count is still below max_burn.
@@ -41,6 +41,12 @@ impl<'info> BurnDelegatedPromoToken<'info> {
             ),
             1,
         )?;
+
+        if let Some(memo) = memo {
+            let account_infos = vec![self.payer.to_account_info()];
+            create_memo(memo.to_string(), account_infos)?;
+        }
+
         self.promo.burn_count += 1;
 
         Ok(())

@@ -572,6 +572,7 @@ name = "bpl-hasura"
 version = "0.1.0"
 dependencies = [
  "anchor-spl",
+ "borsh",
  "bpl-token-metadata",
  "bs58 0.4.0",
  "clap 3.2.22",
@@ -626,6 +627,7 @@ dependencies = [
  "anchor-client",
  "anchor-lang",
  "anchor-spl",
+ "borsh",
  "mpl-token-metadata",
  "solana-sdk",
  "spl-memo",
@@ -2550,6 +2552,8 @@ dependencies = [
  "bytes",
  "fallible-iterator",
  "postgres-protocol",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

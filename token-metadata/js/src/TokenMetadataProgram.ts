@@ -12,7 +12,7 @@ import {
   Mint,
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
-import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds } from '.';
+import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds, Memo } from '.';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
 export class TokenMetadataProgram {
@@ -21,6 +21,7 @@ export class TokenMetadataProgram {
   readonly SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey;
   readonly TOKEN_PROGRAM_ID: PublicKey;
   readonly TOKEN_METADATA_PROGRAM_ID: PublicKey;
+  readonly MEMO_PROGRAM_ID: PublicKey;
 
   readonly ADMIN_PREFIX: string;
   readonly AUTHORITY_PREFIX: string;
@@ -36,7 +37,8 @@ export class TokenMetadataProgram {
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
     );
     this.TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-    this.TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+    this.TOKEN_METADATA_PROGRAM_ID = METADATA_PROGRAM_ID;
+    this.MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
     this.ADMIN_PREFIX = 'admin';
     this.AUTHORITY_PREFIX = 'authority';
@@ -111,6 +113,7 @@ export class TokenMetadataProgram {
     maxMint: number | null,
     maxBurn: number | null,
     platform: PublicKey,
+    memo: Memo | null
   ): Promise<PublicKey> {
     const mint = Keypair.generate();
 
@@ -127,12 +130,13 @@ export class TokenMetadataProgram {
     };
 
     await this.program.methods
-      .createPromo(promoData, metadataData, isMutable)
+      .createPromo(promoData, metadataData, isMutable, memo)
       .accounts({
         mint: mint.publicKey,
         metadata,
         platform,
-        metadataProgram: METADATA_PROGRAM_ID,
+        metadataProgram: this.TOKEN_METADATA_PROGRAM_ID,
+        memoProgram: this.MEMO_PROGRAM_ID,
       })
       .signers([mint])
       .rpc();
@@ -150,16 +154,17 @@ export class TokenMetadataProgram {
    * @return Address of promo account
    */
   // no promo owner as signer for demo
-  async mintPromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+  async mintPromoToken(mint: PublicKey, promoOwner: Keypair, memo: Memo | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
     await this.program.methods
-      .mintPromoToken()
+      .mintPromoToken(memo)
       .accounts({
         payer: promoOwner.publicKey,
         tokenOwner: this.payer.publicKey,
         mint,
         tokenAccount,
+        memoProgram: this.MEMO_PROGRAM_ID,
       })
       .signers([promoOwner])
       .rpc();
@@ -174,13 +179,14 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
-  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair): Promise<PublicKey> {
+  async delegatePromoToken(mint: PublicKey, promoOwner: Keypair, memo: Memo | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
 
-    await this.program.methods.delegatePromoToken().accounts({
+    await this.program.methods.delegatePromoToken(memo).accounts({
       payer: promoOwner.publicKey,
       tokenOwner: this.payer.publicKey,
-      tokenAccount
+      tokenAccount,
+      memoProgram: this.MEMO_PROGRAM_ID,
     })
       .signers([promoOwner])
       .rpc();
@@ -201,15 +207,17 @@ export class TokenMetadataProgram {
     mint: PublicKey,
     tokenOwner: PublicKey,
     platform: PublicKey,
+    memo: Memo | null
   ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner);
 
     await this.program.methods
-      .burnDelegatedPromoToken()
+      .burnDelegatedPromoToken(memo)
       .accounts({
         mint,
         platform,
         tokenAccount,
+        memoProgram: this.MEMO_PROGRAM_ID,
       })
       .rpc();
 

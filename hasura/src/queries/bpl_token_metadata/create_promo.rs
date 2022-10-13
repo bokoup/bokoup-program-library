@@ -1,5 +1,7 @@
+use crate::Memo;
+use borsh::de::BorshDeserialize;
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
-use tokio_postgres::Client;
+use tokio_postgres::{types::Json, Client};
 use tracing::{error, info};
 
 const UPSERT_QUERY: &str = include_str!("create_promo_upsert.sql");
@@ -9,10 +11,16 @@ pub async fn upsert(
     client: &Client,
     signature: &Signature,
     accounts: &Vec<Pubkey>,
-    _data: &[u8],
+    data: &[u8],
     slot: u64,
 ) {
     let accounts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let memo: Option<Memo> =
+        if let Ok(args) = bpl_token_metadata::instruction::CreatePromo::try_from_slice(data) {
+            args.memo.map(Into::into)
+        } else {
+            None
+        };
 
     let signature = signature.to_string();
     let payer = &accounts[0];
@@ -36,6 +44,7 @@ pub async fn upsert(
                 promo,
                 platform,
                 admin_settings,
+                &Json::<Option<Memo>>(memo),
                 &slot,
             ],
         )
@@ -46,7 +55,7 @@ pub async fn upsert(
             info!(signature = signature.as_str(), insert);
         }
         Err(error) => {
-            error!(signature = signature.as_str(), ?error);
+            error!(signature = signature.as_str(), ?error,);
         }
     }
 }
