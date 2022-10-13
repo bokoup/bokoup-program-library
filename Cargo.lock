@@ -628,6 +628,7 @@ dependencies = [
  "anchor-spl",
  "mpl-token-metadata",
  "solana-sdk",
+ "spl-memo",
 ]
 
 [[package]]
