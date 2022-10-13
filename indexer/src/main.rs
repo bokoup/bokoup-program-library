@@ -23,10 +23,15 @@ async fn main() {
         .init();
 
     dotenv::dotenv().ok();
+    let pg_password = std::env::var("PG_PASSWORD_LOCALNET").unwrap();
     let args = Args::parse();
 
     // create db connection pool
-    let pg_config = args.db_url.url().parse::<bpl_hasura::Config>().unwrap();
+    let pg_config = args
+        .db_url
+        .url(pg_password)
+        .parse::<bpl_hasura::Config>()
+        .unwrap();
     let mgr_config = ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     };
@@ -35,7 +40,10 @@ async fn main() {
         .max_size(args.pg_pool_size)
         .build()
         .unwrap();
-    tracing::info!(db_url = args.db_url.url(), pool_size = args.pg_pool_size);
+    tracing::info!(
+        db_url = args.db_url.url("<pw>".to_string()),
+        pool_size = args.pg_pool_size
+    );
 
     // connect to nats
     let nats_connection = nats::connect(args.nats_url.as_str()).unwrap();

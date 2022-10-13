@@ -13,13 +13,14 @@ pub enum DatabaseURL {
 }
 
 impl DatabaseURL {
-    pub fn url(&self) -> String {
-        let pg_password_localnet = std::env::var("PG_PASSWORD_LOCALNET").unwrap();
+    pub fn url(&self, password: String) -> String {
         match self {
             DatabaseURL::Localnet => {
-                format!("postgresql://postgres:{pg_password_localnet}@34.71.64.129:5432/postgres")
+                format!("postgresql://postgres:{password}@34.71.64.129:5432/postgres")
             }
-            DatabaseURL::Devnet => String::from("postgresql://postgres"),
+            DatabaseURL::Devnet => {
+                format!("postgresql://postgres:{password}@<host>/postgres")
+            }
         }
     }
 }
@@ -357,8 +358,12 @@ mod tests {
     async fn it_runs_account_tests_success() {
         dotenv::dotenv().ok();
         tracing_subscriber::fmt::init();
+        let pg_password_localnet = std::env::var("PG_PASSWORD_LOCALNET").unwrap();
 
-        let pg_config = DatabaseURL::Localnet.url().parse::<Config>().unwrap();
+        let pg_config = DatabaseURL::Localnet
+            .url(pg_password_localnet)
+            .parse::<Config>()
+            .unwrap();
         let mgr_config = ManagerConfig {
             recycling_method: RecyclingMethod::Fast,
         };

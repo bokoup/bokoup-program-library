@@ -22,8 +22,9 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     dotenv::dotenv().ok();
+    let password = std::env::var("PG_PASSWORD_LOCALNET").unwrap();
     let cli = Cli::parse();
-    let client = get_client(&cli.db_url.url()).await?;
+    let client = get_client(&cli.db_url.url(password)).await?;
 
     if !cli.quiet {
         tracing_subscriber::fmt::init();
