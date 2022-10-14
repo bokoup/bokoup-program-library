@@ -5,7 +5,6 @@ SET check_function_bodies = false;
 -- bpl_token_metadata
 -- =============================
 
-DROP TABLE IF EXISTS public.promo CASCADE;
 CREATE TABLE public.promo (
     id text NOT NULL,
     owner text NOT NULL,
@@ -23,7 +22,6 @@ CREATE TABLE public.promo (
 ALTER TABLE ONLY public.promo
     ADD CONSTRAINT promo_pkey PRIMARY KEY (id);
 
-DROP TABLE IF EXISTS public.create_promo CASCADE;
 CREATE TABLE public.create_promo (
     signature text NOT NULL,
     payer text NOT NULL,
@@ -41,7 +39,6 @@ CREATE TABLE public.create_promo (
 ALTER TABLE ONLY public.create_promo
     ADD CONSTRAINT create_promo_pkey PRIMARY KEY (signature);
 
-DROP TABLE IF EXISTS public.mint_promo_token CASCADE;
 CREATE TABLE public.mint_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
@@ -59,7 +56,6 @@ CREATE TABLE public.mint_promo_token (
 ALTER TABLE ONLY public.mint_promo_token
     ADD CONSTRAINT mint_promo_token_pkey PRIMARY KEY (signature);
 
-DROP TABLE IF EXISTS public.delegate_promo_token CASCADE;
 CREATE TABLE public.delegate_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
@@ -76,7 +72,6 @@ CREATE TABLE public.delegate_promo_token (
 ALTER TABLE ONLY public.delegate_promo_token
     ADD CONSTRAINT delegate_promo_token_pkey PRIMARY KEY (signature);
 
-DROP TABLE IF EXISTS public.burn_delegated_promo_token CASCADE;
 CREATE TABLE public.burn_delegated_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
@@ -98,7 +93,6 @@ ALTER TABLE ONLY public.burn_delegated_promo_token
 -- mpl_auction_house
 -- =============================
 
-DROP TABLE IF EXISTS public.auction_house;
 CREATE TABLE public.auction_house (
     id text NOT NULL,
     auction_house_fee_account text NOT NULL,
@@ -122,7 +116,6 @@ CREATE TABLE public.auction_house (
 ALTER TABLE ONLY public.auction_house
     ADD CONSTRAINT auction_house_pkey PRIMARY KEY (id);
 
-DROP TABLE IF EXISTS public.bid_receipt;
 CREATE TABLE public.bid_receipt (
     id text NOT NULL,
     trade_state text NOT NULL,
@@ -146,7 +139,6 @@ CREATE TABLE public.bid_receipt (
 ALTER TABLE ONLY public.bid_receipt
     ADD CONSTRAINT bid_receipt_pkey PRIMARY KEY (id);
 
-DROP TABLE IF EXISTS public.listing_receipt CASCADE;
 CREATE TABLE public.listing_receipt (
     id text NOT NULL,
     trade_state text NOT NULL,
@@ -169,7 +161,6 @@ CREATE TABLE public.listing_receipt (
 ALTER TABLE ONLY public.listing_receipt
     ADD CONSTRAINT listing_receipt_pkey PRIMARY KEY (id);
 
-DROP TABLE IF EXISTS public.purchase_receipt;
 CREATE TABLE public.purchase_receipt (
     id text NOT NULL,
     bookkeeper text NOT NULL,
@@ -193,7 +184,6 @@ ALTER TABLE ONLY public.purchase_receipt
 -- mpl_token_metadata
 -- =============================
 
-DROP TABLE IF EXISTS public.creator;
 CREATE TABLE public.creator (
     metadata text NOT NULL,
     address text NOT NULL,
@@ -207,7 +197,6 @@ CREATE TABLE public.creator (
 ALTER TABLE ONLY public.creator
     ADD CONSTRAINT creator_pkey PRIMARY KEY (metadata, address);
 
-DROP TABLE IF EXISTS public.metadata;
 CREATE TABLE public.metadata (
     id text NOT NULL,
     key text NOT NULL,
@@ -238,7 +227,6 @@ ALTER TABLE ONLY public.metadata
 -- spl_token
 -- =============================
 
-DROP TABLE IF EXISTS public.mint;
 CREATE TABLE public.mint (
     id text NOT NULL,
     mint_authority text,
@@ -254,7 +242,6 @@ CREATE TABLE public.mint (
 ALTER TABLE ONLY public.mint
     ADD CONSTRAINT mint_pkey PRIMARY KEY (id);
 
-DROP TABLE IF EXISTS public.token_account CASCADE;
 CREATE TABLE public.token_account (
     id text NOT NULL,
     mint text NOT NULL,

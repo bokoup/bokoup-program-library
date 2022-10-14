@@ -9,5 +9,5 @@ pub mod get_mint_promo_tx;
 pub struct Params {
     pub mint_string: String,
     pub message: String,
-    pub memo: String,
+    pub memo: Option<String>,
 }

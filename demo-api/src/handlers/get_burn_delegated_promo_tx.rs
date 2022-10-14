@@ -21,14 +21,15 @@ pub async fn handler(
     }): Path<Params>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<ResponseData>, AppError> {
-    tracing::debug!(mint_string = mint_string, message = message, memo = memo);
+    tracing::debug!(mint_string = mint_string, message, memo);
 
     let token_owner = Pubkey::from_str(&data.account)?;
     let payer = state.promo_owner.pubkey();
 
     let mint = Pubkey::from_str(&mint_string)?;
     let instruction =
-        create_burn_delegated_promo_instruction(payer, token_owner, mint, state.platform).await?;
+        create_burn_delegated_promo_instruction(payer, token_owner, mint, state.platform, memo)
+            .await?;
 
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;

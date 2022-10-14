@@ -3,7 +3,12 @@ pub use tokio_postgres::{types::FromSql, Client, Config, Error, NoTls};
 
 pub mod queries;
 
-const RESET_SCHEMA_SQL: &str = include_str!("schema/schema.sql");
+const RESET_SCHEMA_SQL: &str = include_str!("./migrations/reset.sql");
+
+mod embedded {
+    use refinery::embed_migrations;
+    embed_migrations!("./src/migrations");
+}
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Default)]
 pub enum DatabaseURL {
@@ -13,14 +18,10 @@ pub enum DatabaseURL {
 }
 
 impl DatabaseURL {
-    pub fn url(&self, password: String) -> String {
+    pub fn url(&self) -> String {
         match self {
-            DatabaseURL::Localnet => {
-                format!("postgresql://postgres:{password}@34.71.64.129:5432/postgres")
-            }
-            DatabaseURL::Devnet => {
-                format!("postgresql://postgres:{password}@<host>/postgres")
-            }
+            DatabaseURL::Localnet => std::env::var("PG_DATABASE_URL_LOCALNET").unwrap(),
+            DatabaseURL::Devnet => std::env::var("PG_DATABASE_URL_DEVNET").unwrap(),
         }
     }
 }
@@ -28,8 +29,6 @@ impl DatabaseURL {
 pub async fn get_client(db_url: &str) -> Result<Client, Error> {
     let (client, connection) = tokio_postgres::connect(db_url, NoTls).await?;
 
-    // The connection object performs the actual communication with the database,
-    // so spawn it off to run on its own.
     tokio::spawn(async move {
         if let Err(e) = connection.await {
             eprintln!("connection error: {}", e);
@@ -38,9 +37,24 @@ pub async fn get_client(db_url: &str) -> Result<Client, Error> {
     Ok(client)
 }
 
-pub async fn reset(client: &Client) -> Result<(), Error> {
+#[tracing::instrument(skip_all)]
+pub async fn reset(client: &mut Client) -> Result<(), Error> {
     client.batch_execute(RESET_SCHEMA_SQL).await?;
-    tracing::info!("schema reset");
+    let report = embedded::migrations::runner()
+        .run_async(client)
+        .await
+        .unwrap();
+    tracing::info!(applied_migrations = report.applied_migrations().len());
+    Ok(())
+}
+
+#[tracing::instrument(skip_all)]
+pub async fn apply_migrations(client: &mut Client) -> Result<(), Error> {
+    let report = embedded::migrations::runner()
+        .run_async(client)
+        .await
+        .unwrap();
+    tracing::info!(applied_migrations = report.applied_migrations().len());
     Ok(())
 }
 
@@ -357,13 +371,9 @@ mod tests {
     #[tokio::test]
     async fn it_runs_account_tests_success() {
         dotenv::dotenv().ok();
-        tracing_subscriber::fmt::init();
-        let pg_password_localnet = std::env::var("PG_PASSWORD_LOCALNET").unwrap();
+        tracing_subscriber::fmt().init();
 
-        let pg_config = DatabaseURL::Localnet
-            .url(pg_password_localnet)
-            .parse::<Config>()
-            .unwrap();
+        let pg_config = DatabaseURL::Localnet.url().parse::<Config>().unwrap();
         let mgr_config = ManagerConfig {
             recycling_method: RecyclingMethod::Fast,
         };
@@ -381,8 +391,8 @@ mod tests {
             is_initialized: true,
         };
 
-        let client = pg_pool.get().await.unwrap();
-        reset(&client).await.unwrap();
+        let mut client = pg_pool.get().await.unwrap();
+        reset(&mut client).await.unwrap();
 
         // insert a create_promo transaction
         let data: &[u8] = &[0, 0, 0];

@@ -568,6 +568,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "bpl-demo-api"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "axum",
+ "base64 0.13.0",
+ "bincode",
+ "bpl-token-metadata",
+ "dotenv",
+ "futures",
+ "hyper",
+ "reqwest",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-sdk",
+ "spl-memo",
+ "spl-token",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "urlencoding",
+]
+
+[[package]]
 name = "bpl-hasura"
 version = "0.1.0"
 dependencies = [
@@ -582,6 +612,7 @@ dependencies = [
  "log",
  "mpl-auction-house",
  "mpl-token-metadata",
+ "refinery",
  "serde_json",
  "solana-sdk",
  "spl-token",
@@ -1070,35 +1101,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eaa37046cc0f6c3cc6090fbdbf73ef0b8ef4cfcc37f6befc0020f63e8cf121e1"
 dependencies = [
  "tokio",
-]
-
-[[package]]
-name = "demo-api"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "axum",
- "base64 0.13.0",
- "bincode",
- "bpl-token-metadata",
- "dotenv",
- "futures",
- "hyper",
- "reqwest",
- "serde",
- "serde_derive",
- "serde_json",
- "solana-sdk",
- "spl-token",
- "thiserror",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "url",
- "urlencoding",
 ]
 
 [[package]]
@@ -2777,6 +2779,51 @@ dependencies = [
  "getrandom 0.2.7",
  "redox_syscall",
  "thiserror",
+]
+
+[[package]]
+name = "refinery"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8564889f234bc0abb13420712e587168b121114a9b715cf5fb71115c568920e4"
+dependencies = [
+ "refinery-core",
+ "refinery-macros",
+]
+
+[[package]]
+name = "refinery-core"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38201b0840b665f4ce00ac34ce21ad6598f5b3c2f59b100da4f7269a68617c22"
+dependencies = [
+ "async-trait",
+ "cfg-if",
+ "lazy_static",
+ "log",
+ "regex",
+ "serde",
+ "siphasher",
+ "thiserror",
+ "time 0.3.15",
+ "tokio",
+ "tokio-postgres",
+ "toml",
+ "url",
+ "walkdir",
+]
+
+[[package]]
+name = "refinery-macros"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b64e9034a7bc098dbdc618518e2e9a9fe16046ec35ca2f979e378114af3d8557"
+dependencies = [
+ "proc-macro2 1.0.46",
+ "quote 1.0.21",
+ "refinery-core",
+ "regex",
+ "syn 1.0.101",
 ]
 
 [[package]]

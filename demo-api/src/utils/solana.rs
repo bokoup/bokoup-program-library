@@ -32,6 +32,7 @@ pub async fn create_mint_promo_instruction(
     payer: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
+    memo: Option<String>,
 ) -> Result<Instruction, AppError> {
     let (authority, _auth_bump) = find_authority_address();
     let (promo, _promo_bump) = find_promo_address(&mint);
@@ -47,13 +48,14 @@ pub async fn create_mint_promo_instruction(
         admin_settings,
         token_account,
         token_program: anchor_spl::token::ID,
+        memo_program: spl_memo::ID,
         associated_token_program: anchor_spl::associated_token::ID,
         rent: sysvar::rent::id(),
         system_program: system_program::ID,
     }
     .to_account_metas(Some(true));
 
-    let data = mint_promo_token_instruction {}.data();
+    let data = mint_promo_token_instruction { memo }.data();
 
     Ok(Instruction {
         program_id: bpl_token_metadata::id(),
@@ -66,6 +68,7 @@ pub async fn create_delegate_promo_instruction(
     payer: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
+    memo: Option<String>,
 ) -> Result<Instruction, AppError> {
     let (authority, _auth_bump) = find_authority_address();
     let (promo, _promo_bump) = find_promo_address(&mint);
@@ -77,12 +80,13 @@ pub async fn create_delegate_promo_instruction(
         authority,
         promo,
         token_account,
+        memo_program: spl_memo::ID,
         token_program: anchor_spl::token::ID,
         system_program: system_program::ID,
     }
     .to_account_metas(Some(true));
 
-    let data = delegate_promo_token_instruction {}.data();
+    let data = delegate_promo_token_instruction { memo }.data();
 
     Ok(Instruction {
         program_id: bpl_token_metadata::id(),
@@ -96,6 +100,7 @@ pub async fn create_burn_delegated_promo_instruction(
     token_owner: Pubkey,
     mint: Pubkey,
     platform: Pubkey,
+    memo: Option<String>,
 ) -> Result<Instruction, AppError> {
     let (authority, _auth_bump) = find_authority_address();
     let (promo, _promo_bump) = find_promo_address(&mint);
@@ -110,6 +115,7 @@ pub async fn create_burn_delegated_promo_instruction(
         platform,
         admin_settings,
         token_account,
+        memo_program: spl_memo::ID,
         token_program: anchor_spl::token::ID,
         associated_token_program: anchor_spl::associated_token::ID,
         rent: sysvar::rent::id(),
@@ -117,7 +123,7 @@ pub async fn create_burn_delegated_promo_instruction(
     }
     .to_account_metas(Some(true));
 
-    let data = burn_delegated_promo_token_instruction {}.data();
+    let data = burn_delegated_promo_token_instruction { memo }.data();
 
     Ok(Instruction {
         program_id: bpl_token_metadata::id(),
