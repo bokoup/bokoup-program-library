@@ -1,3 +1,21 @@
 table:
   name: token_account
   schema: public
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - amount
+        - delegated_amount
+        - is_native
+        - slot
+        - write_version
+        - close_authority
+        - delegate
+        - id
+        - mint
+        - owner
+        - state
+        - created_at
+        - modified_at
+      filter: {}

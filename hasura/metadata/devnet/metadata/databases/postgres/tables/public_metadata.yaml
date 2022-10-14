@@ -1,3 +1,29 @@
 table:
   name: metadata
   schema: public
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - slot
+        - uses_remaining
+        - uses_total
+        - write_version
+        - collection_verified
+        - is_mutable
+        - primary_sale_happened
+        - edition_nonce
+        - seller_fee_basis_points
+        - collection_key
+        - id
+        - key
+        - mint
+        - name
+        - symbol
+        - token_standard
+        - update_authority
+        - uri
+        - uses_use_method
+        - created_at
+        - modified_at
+      filter: {}

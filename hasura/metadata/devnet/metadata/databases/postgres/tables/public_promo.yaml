@@ -20,3 +20,21 @@ object_relationships:
         remote_table:
           name: mint
           schema: public
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - id
+        - owner
+        - mint
+        - metadata
+        - mint_count
+        - burn_count
+        - max_mint
+        - max_burn
+        - slot
+        - write_version
+        - created_at
+        - modified_at
+      filter: {}
+      limit: 100

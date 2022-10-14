@@ -6,6 +6,6 @@ WORKDIR /app
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc
-COPY --from=build-env /app/target/release/demo-api /
+COPY --from=build-env /app/target/release/bpl-demo-api /
 EXPOSE 8080
-CMD ["./demo-api"]
+CMD ["./bpl-demo-api"]
