@@ -1,5 +1,5 @@
 version: 3
-endpoint: https://shining-sailfish-15.hasura.app
+endpoint: https://cool-tapir-17.hasura.app
 metadata_directory: metadata
 actions:
   kind: synchronous
