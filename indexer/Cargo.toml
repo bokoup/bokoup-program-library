@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 anchor-lang = "0.24.2"
 anchor-spl = "0.24.2"
 bincode = "1.3.3"
-bpl-hasura = { path = "../hasura" }
+bpl-api-data = { path = "../api-data" }
 bpl-token-metadata = { path = "../token-metadata/program" }
 bs58 = "0.4.0"
 clap = { version="3.2.22", features=["derive"] }

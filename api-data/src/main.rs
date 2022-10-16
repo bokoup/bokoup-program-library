@@ -1,4 +1,4 @@
-use bpl_hasura::{apply_migrations, get_client, reset, DatabaseURL};
+use bpl_api_data::{apply_migrations, get_client, reset, DatabaseURL};
 use clap::{Parser, Subcommand};
 use tokio_postgres::Error;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -28,10 +28,11 @@ async fn main() -> Result<(), Error> {
     let mut client = get_client(&cli.db_url.url()).await?;
 
     if !cli.quiet {
-        std::env::set_var("RUST_LOG", "bpl_hasura=trace");
         tracing_subscriber::registry()
-            .with(fmt::layer())
-            .with(EnvFilter::from_default_env())
+            .with(tracing_subscriber::EnvFilter::new(
+                std::env::var("RUST_LOG").unwrap_or_else(|_| "bpl_api_data=trace".into()),
+            ))
+            .with(tracing_subscriber::fmt::layer())
             .init();
     }
 

@@ -3,7 +3,7 @@ use axum::{
     error_handling::HandleErrorLayer,
     http::{header, Method, StatusCode},
     response::IntoResponse,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use handlers::*;
@@ -29,7 +29,7 @@ pub const CLOVER_APP_ID: &str = "MAC8DQKWCCB1R";
 
 pub struct State {
     pub promo_owner: Keypair,
-    pub platform: Pubkey,
+    pub platform: Keypair,
     pub solana: Solana,
     pub clover: Clover,
 }
@@ -40,7 +40,7 @@ impl Default for State {
     fn default() -> Self {
         Self {
             promo_owner: read_keypair_file("/keys/promo_owner-keypair.json").unwrap(),
-            platform: Pubkey::from_str(PLATFORM_ADDRESS).unwrap(),
+            platform: read_keypair_file("/keys/platform-keypair.json").unwrap(),
             solana: Solana {
                 base_url: SOL_URL.parse::<Url>().unwrap(),
                 client: reqwest::Client::new(),
@@ -88,6 +88,11 @@ pub fn create_app() -> Router {
             "/promo/burn-delegated/:mint_string/:message/:memo",
             get(get_app_id::handler).post(get_burn_delegated_promo_tx::handler),
         )
+        .route(
+            "/promo/create",
+            post(create_promo::handler), // .layer(DefaultBodyLimit::disable())
+                                         // .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024 /* 10mb */)), // ),
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(cors)
@@ -128,15 +133,18 @@ pub mod test {
         http::{Method, Request, StatusCode},
     };
     use solana_sdk::{signer::Signer, transaction::Transaction};
+    use std::net::{SocketAddr, TcpListener};
+    use tokio::fs;
     use tower::ServiceExt;
     use tracing_subscriber::{fmt, prelude::*, EnvFilter};
     use utils::solana::*;
+
     const MESSAGE: &str =
         "This is a really long message that tells you do do something with your $$!!";
 
     #[tokio::test]
     async fn test_app_id() {
-        std::env::set_var("RUST_LOG", "bpl_demo_api=trace");
+        std::env::set_var("RUST_LOG", "bpl_api_tx=trace");
         tracing_subscriber::registry()
             .with(fmt::layer())
             .with(EnvFilter::from_default_env())
@@ -354,7 +362,7 @@ pub mod test {
             state.promo_owner.pubkey(),
             token_owner,
             mint,
-            state.platform,
+            state.platform.pubkey(),
             None,
         )
         .await
@@ -372,6 +380,98 @@ pub mod test {
                 transaction,
                 message: MESSAGE.to_owned(),
             }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_create_promo() {
+        dotenv::dotenv().ok();
+
+        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        tokio::spawn(async move {
+            axum::Server::from_tcp(listener)
+                .unwrap()
+                .serve(create_app().into_make_service())
+                .await
+                .unwrap();
+        });
+
+        let file_path = "./tests/fixtures/bokoup_logo_3.jpg";
+        let file = fs::read(file_path).await.unwrap();
+
+        let content_type = if let Some(content_type) = mime_guess::from_path(file_path).first() {
+            content_type.to_string()
+        } else {
+            mime_guess::mime::OCTET_STREAM.to_string()
+        };
+
+        let fields = [
+            "name",
+            "symbol",
+            "description",
+            "attributes",
+            "collection",
+            "max_mint",
+            "max_burn",
+            "image",
+        ];
+
+        let json_data = serde_json::json!({
+            "name": "Test Promo",
+            "symbol": "TEST",
+            "description": "Bokoup test promotion.",
+            "attributes": [
+                {  "trait_type": "discount",
+                    "value": 10,
+                },
+                {
+                    "trait_type": "expiration",
+                    "value": "never",
+                },
+            ],
+            "collection": {
+                "name": "Test Merchant Promos",
+                "family": "Non-Fungible Offers"
+            },
+            "max_mint": 1000,
+            "max_burn": 500
+        });
+
+        let form = reqwest::multipart::Form::new()
+            .part(
+                "json-data",
+                reqwest::multipart::Part::text(json_data.to_string())
+                    .mime_str("application/json")
+                    .unwrap(),
+            )
+            .part(
+                "image",
+                reqwest::multipart::Part::bytes(file)
+                    .file_name(file_path.split("/").last().unwrap())
+                    .mime_str(&content_type)
+                    .unwrap(),
+            );
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{}/promo/create", addr))
+            .multipart(form)
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "{}",
+            response
+                .json::<serde_json::Value>()
+                .await
+                .unwrap()
+                .as_object()
+                .unwrap()["error"]
         );
     }
 }

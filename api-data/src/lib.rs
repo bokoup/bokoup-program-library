@@ -395,7 +395,7 @@ mod tests {
         reset(&mut client).await.unwrap();
 
         // insert a create_promo transaction
-        let data: &[u8] = &[0, 0, 0];
+        let data: &[u8] = &[0; 8];
         let accounts: Vec<Pubkey> = (0..10).map(|_| Pubkey::new_unique()).collect();
 
         for table in vec!["create_promo", "mint_promo_token", "delegate_promo_token"] {

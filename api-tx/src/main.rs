@@ -1,4 +1,4 @@
-use bpl_demo_api::create_app;
+use bpl_api_tx::create_app;
 use std::net::SocketAddr;
 
 #[tokio::main]

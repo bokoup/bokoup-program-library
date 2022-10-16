@@ -1,4 +1,4 @@
-use bpl_hasura::DatabaseURL;
+use bpl_api_data::DatabaseURL;
 use clap::Parser;
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -16,7 +16,7 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    std::env::set_var("RUST_LOG", "bpl_indexer=trace,bpl_hasura=trace");
+    std::env::set_var("RUST_LOG", "bpl_indexer=trace,bpl_api_data=trace");
     tracing_subscriber::registry()
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
@@ -26,11 +26,11 @@ async fn main() {
     let args = Args::parse();
 
     // create db connection pool
-    let pg_config = args.db_url.url().parse::<bpl_hasura::Config>().unwrap();
+    let pg_config = args.db_url.url().parse::<bpl_api_data::Config>().unwrap();
     let mgr_config = ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     };
-    let mgr = Manager::from_config(pg_config, bpl_hasura::NoTls, mgr_config);
+    let mgr = Manager::from_config(pg_config, bpl_api_data::NoTls, mgr_config);
     let pg_pool = Pool::builder(mgr)
         .max_size(args.pg_pool_size)
         .build()

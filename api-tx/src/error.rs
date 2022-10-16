@@ -17,6 +17,8 @@ pub enum AppError {
     GenericError,
     #[error("bincode: {0}")]
     BincodeError(#[from] Box<bincode::ErrorKind>),
+    #[error("create promo request: {0}")]
+    CreatePromoRequestError(String),
     #[error("pubkey error")]
     PubkeyError(#[from] ParsePubkeyError),
     #[error("reqwest: {0}")]

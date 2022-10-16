@@ -1,6 +1,6 @@
 use crate::AccountMessageData;
 use anchor_lang::AccountDeserialize;
-use bpl_hasura::queries::mpl_auction_house::{
+use bpl_api_data::queries::mpl_auction_house::{
     auction_house, bid_receipt, listing_receipt, purchase_receipt,
 };
 pub use mpl_auction_house::{
@@ -13,7 +13,7 @@ pub use mpl_auction_house::{
 
 #[tracing::instrument(skip_all)]
 async fn process_auction_house<'a>(
-    pg_client: &bpl_hasura::Client,
+    pg_client: &bpl_api_data::Client,
     key: &[u8],
     buf: &mut &[u8],
     slot: u64,
@@ -31,7 +31,7 @@ async fn process_auction_house<'a>(
 
 #[tracing::instrument(skip_all)]
 async fn process_bid_receipt<'a>(
-    pg_client: &bpl_hasura::Client,
+    pg_client: &bpl_api_data::Client,
     key: &[u8],
     buf: &mut &[u8],
     slot: u64,
@@ -47,7 +47,7 @@ async fn process_bid_receipt<'a>(
 
 #[tracing::instrument(skip_all)]
 async fn process_listing_receipt<'a>(
-    pg_client: &bpl_hasura::Client,
+    pg_client: &bpl_api_data::Client,
     key: &[u8],
     buf: &mut &[u8],
     slot: u64,
@@ -65,7 +65,7 @@ async fn process_listing_receipt<'a>(
 
 #[tracing::instrument(skip_all)]
 async fn process_purchase_receipt<'a>(
-    pg_client: &bpl_hasura::Client,
+    pg_client: &bpl_api_data::Client,
     key: &[u8],
     buf: &mut &[u8],
     slot: u64,

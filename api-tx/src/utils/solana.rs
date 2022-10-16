@@ -10,23 +10,93 @@ use anchor_lang::{
 use bpl_token_metadata::{
     accounts::{
         BurnDelegatedPromoToken as burn_delegated_promo_token_accounts,
-        DelegatePromoToken as delegate_promo_token_accounts,
+        CreatePromo as create_promo_accounts, DelegatePromoToken as delegate_promo_token_accounts,
         MintPromoToken as mint_promo_token_accounts,
     },
     instruction::{
         BurnDelegatedPromoToken as burn_delegated_promo_token_instruction,
+        CreatePromo as create_promo_instruction,
         DelegatePromoToken as delegate_promo_token_instruction,
         MintPromoToken as mint_promo_token_instruction,
     },
+    state::{DataV2, Promo},
     utils::{
         find_admin_address, find_associated_token_address, find_authority_address,
-        find_promo_address,
+        find_metadata_address, find_promo_address,
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use solana_sdk::hash::Hash;
 use std::str::FromStr;
+
+pub async fn create_create_promo_instruction(
+    payer: Pubkey,
+    mint: Pubkey,
+    platform: Pubkey,
+    name: String,
+    symbol: String,
+    uri: String,
+    max_mint: Option<u32>,
+    max_burn: Option<u32>,
+    is_mutable: bool,
+    memo: Option<String>,
+) -> Result<Instruction, AppError> {
+    let (authority, _auth_bump) = find_authority_address();
+    let (promo, _promo_bump) = find_promo_address(&mint);
+    let (metadata, _metadata_bump) = find_metadata_address(&mint);
+    let (admin_settings, _admin_bump) = find_admin_address();
+
+    let accounts = create_promo_accounts {
+        payer,
+        mint,
+        metadata,
+        authority,
+        promo,
+        platform,
+        admin_settings,
+        metadata_program: mpl_token_metadata::ID,
+        token_program: anchor_spl::token::ID,
+        memo_program: spl_memo::ID,
+        rent: sysvar::rent::id(),
+        system_program: system_program::ID,
+    }
+    .to_account_metas(Some(true));
+
+    let promo_data = Promo {
+        owner: payer,
+        mint,
+        metadata,
+        mint_count: 0,
+        burn_count: 0,
+        max_mint,
+        max_burn,
+    };
+
+    let metadata_data = DataV2 {
+        name,
+        symbol,
+        uri,
+        seller_fee_basis_points: 0,
+        creators: None,
+        collection: None,
+        uses: None,
+    };
+
+    let data = create_promo_instruction {
+        promo_data,
+        metadata_data,
+        is_mutable,
+        memo,
+    }
+    .data();
+
+    Ok(Instruction {
+        program_id: bpl_token_metadata::id(),
+        accounts,
+        data,
+    })
+}
 
 pub async fn create_mint_promo_instruction(
     payer: Pubkey,

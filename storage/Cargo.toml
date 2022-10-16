@@ -1,0 +1,16 @@
+[package]
+name = "bpl-storage"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bundlr-sdk = "0.3.0"
+clap = { version="3.2.22", features=["derive"] }
+ed25519-dalek = "1.0.1"
+dotenv = "0.15"
+serde_json = "1.0.68"
+tokio = { version = "1.18.2", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version="0.3", features = ["env-filter"] }
+url = "2.2.2"
+

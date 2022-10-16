@@ -1,6 +1,6 @@
 use crate::{AccountMessageData, TransactionMessageData};
 use anchor_lang::AccountDeserialize;
-use bpl_hasura::{
+use bpl_api_data::{
     queries::bpl_token_metadata::{
         burn_delegated_promo_token, create_promo, delegate_promo_token, mint_promo_token, promo,
     },

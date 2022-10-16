@@ -1,5 +1,5 @@
 use crate::AccountMessageData;
-use bpl_hasura::queries::mpl_token_metadata::metadata;
+use bpl_api_data::queries::mpl_token_metadata::metadata;
 pub use mpl_token_metadata::{
     state::{Key::MetadataV1, Metadata, MAX_METADATA_LEN},
     utils::try_from_slice_checked,
@@ -8,7 +8,7 @@ pub use mpl_token_metadata::{
 
 #[tracing::instrument(skip_all)]
 async fn process_metadata<'a>(
-    pg_client: &bpl_hasura::Client,
+    pg_client: &bpl_api_data::Client,
     key: &[u8],
     data: &mut &[u8],
     slot: u64,

@@ -1,7 +1,7 @@
 use crate::AccountMessageData;
 use anchor_lang::AccountDeserialize;
 pub use anchor_spl::token::{spl_token::ID, Mint, TokenAccount};
-use bpl_hasura::{
+use bpl_api_data::{
     queries::spl_token::{mint, token_account},
     Client,
 };
@@ -24,7 +24,7 @@ async fn process_mint<'a>(
 
 #[tracing::instrument(skip_all)]
 async fn process_token_account<'a>(
-    pg_client: &bpl_hasura::Client,
+    pg_client: &bpl_api_data::Client,
     key: &[u8],
     buf: &mut &[u8],
     slot: u64,
