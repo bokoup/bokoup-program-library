@@ -17,6 +17,8 @@ pub enum AppError {
     GenericError,
     #[error("bincode: {0}")]
     BincodeError(#[from] Box<bincode::ErrorKind>),
+    #[error("bundlr: {0}")]
+    BundlrError(#[from] bundlr_sdk::error::BundlrError),
     #[error("create promo request: {0}")]
     CreatePromoRequestError(String),
     #[error("pubkey error")]

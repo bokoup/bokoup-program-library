@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bs58 = "0.4.0"
 bundlr-sdk = "0.3.0"
 clap = { version="3.2.22", features=["derive"] }
 ed25519-dalek = "1.0.1"
 dotenv = "0.15"
 serde_json = "1.0.68"
+solana-sdk = "1.9.20"
 tokio = { version = "1.18.2", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version="0.3", features = ["env-filter"] }

@@ -695,7 +695,9 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "bpl-token-metadata",
+ "bundlr-sdk",
  "dotenv",
+ "ed25519-dalek",
  "futures",
  "hyper",
  "mime",
@@ -750,11 +752,13 @@ dependencies = [
 name = "bpl-storage"
 version = "0.1.0"
 dependencies = [
+ "bs58 0.4.0",
  "bundlr-sdk",
  "clap 3.2.22",
  "dotenv",
  "ed25519-dalek",
  "serde_json",
+ "solana-sdk",
  "tokio",
  "tracing",
  "tracing-subscriber",

@@ -1,4 +1,3 @@
-use anchor_lang::prelude::Pubkey;
 use axum::{
     error_handling::HandleErrorLayer,
     http::{header, Method, StatusCode},
@@ -6,6 +5,8 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use bundlr_sdk::{tags::Tag, Bundlr, Ed25519Signer};
+use ed25519_dalek::Keypair as DalekKeypair;
 use handlers::*;
 use solana_sdk::{signature::read_keypair_file, signer::keypair::Keypair};
 use std::{borrow::Cow, str::FromStr, sync::Arc, time::Duration};
@@ -23,23 +24,29 @@ pub mod handlers;
 pub mod utils;
 
 pub const SOL_URL: &str = "https://api.devnet.solana.com/";
-pub const PLATFORM_ADDRESS: &str = "2R7GkXvQQS4iHptUvQMhDvRSNXL8tAuuASNvCYgz3GQW";
 pub const CLOVER_URL: &str = "https://sandbox.dev.clover.com/v3/apps/";
 pub const CLOVER_APP_ID: &str = "MAC8DQKWCCB1R";
+pub const PROMO_OWNER_KEYPAIR_PATH: &str = "/keys/promo_owner-keypair.json";
 
 pub struct State {
     pub promo_owner: Keypair,
     pub platform: Keypair,
     pub solana: Solana,
     pub clover: Clover,
+    pub bundlr: bundlr_sdk::Bundlr<Ed25519Signer>,
 }
 
 type SharedState = Arc<State>;
 
 impl Default for State {
     fn default() -> Self {
+        let data = std::fs::read(PROMO_OWNER_KEYPAIR_PATH).unwrap();
+        let bytes: Vec<u8> = serde_json::from_slice(&data).unwrap();
+        let keypair = DalekKeypair::from_bytes(&bytes).unwrap();
+        let signer = Ed25519Signer::new(keypair);
+
         Self {
-            promo_owner: read_keypair_file("/keys/promo_owner-keypair.json").unwrap(),
+            promo_owner: read_keypair_file(PROMO_OWNER_KEYPAIR_PATH).unwrap(),
             platform: read_keypair_file("/keys/platform-keypair.json").unwrap(),
             solana: Solana {
                 base_url: SOL_URL.parse::<Url>().unwrap(),
@@ -53,6 +60,12 @@ impl Default for State {
                     .unwrap(),
                 client: reqwest::Client::new(),
             },
+            bundlr: Bundlr::new(
+                "https://node1.bundlr.network".to_string(),
+                "solana".to_string(),
+                "sol".to_string(),
+                signer,
+            ),
         }
     }
 }
@@ -407,36 +420,23 @@ pub mod test {
             mime_guess::mime::OCTET_STREAM.to_string()
         };
 
-        let fields = [
-            "name",
-            "symbol",
-            "description",
-            "attributes",
-            "collection",
-            "max_mint",
-            "max_burn",
-            "image",
-        ];
-
         let json_data = serde_json::json!({
             "name": "Test Promo",
             "symbol": "TEST",
             "description": "Bokoup test promotion.",
             "attributes": [
-                {  "trait_type": "discount",
-                    "value": 10,
+                {  "trait_type": "max_mint",
+                    "value": 1000,
                 },
                 {
-                    "trait_type": "expiration",
-                    "value": "never",
+                    "trait_type": "max_burn",
+                    "value": 500,
                 },
             ],
             "collection": {
                 "name": "Test Merchant Promos",
                 "family": "Non-Fungible Offers"
-            },
-            "max_mint": 1000,
-            "max_burn": 500
+            }
         });
 
         let form = reqwest::multipart::Form::new()

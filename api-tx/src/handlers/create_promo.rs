@@ -1,36 +1,18 @@
-use std::str::FromStr;
-
-use crate::error::AppError;
-use axum::{extract::Multipart, Json};
+use crate::{error::AppError, State};
+use axum::{extract::Multipart, Extension, Json};
+use bundlr_sdk::tags::Tag;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::sync::Arc;
 
 pub const LABEL: &str = "bokoup";
 pub const ICON: &str = "https://arweave.net/wrKmRzr2KhH92c1iyFeUqkB-AHjYlE7Md7U5rK4qA8M";
 
-pub async fn handler(mut multipart: Multipart) -> Result<Json<ResponseData>, AppError> {
-    let text_fields: Vec<String> = vec!["name", "symbol", "description"]
-        .iter()
-        .map(ToString::to_string)
-        .collect();
-    let number_fields = vec!["max_mint".to_string(), "max_burn".to_string()];
-
-    let fields = [
-        "name",
-        "symbol",
-        "description",
-        "attributes",
-        "collection",
-        "max_mint",
-        "max_burn",
-        "image",
-    ];
-
-    let mut attr_trait = "".to_string();
-    let mut attr_value = "".to_string();
-    let attributes: Vec<Value> = Vec::new();
-
-    let json_data = if let Some(field) = multipart.next_field().await.unwrap() {
+pub async fn handler(
+    mut multipart: Multipart,
+    Extension(state): Extension<Arc<State>>,
+) -> Result<Json<ResponseData>, AppError> {
+    let mut json_data = if let Some(field) = multipart.next_field().await.unwrap() {
         if field.name().expect("name field should exist") == "json-data" {
             let json_string = field.text().await.map_err(|_| {
                 AppError::CreatePromoRequestError("trait attribute value not valid".to_string())
@@ -43,7 +25,8 @@ pub async fn handler(mut multipart: Multipart) -> Result<Json<ResponseData>, App
         }
     } else {
         None
-    };
+    }
+    .expect("json data should be a value");
     let image_data = if let Some(field) = multipart.next_field().await.unwrap() {
         if field.name().expect("name field should exist") == "image" {
             let content_type = field.content_type().map(ToString::to_string).ok_or(
@@ -60,14 +43,58 @@ pub async fn handler(mut multipart: Multipart) -> Result<Json<ResponseData>, App
         }
     } else {
         None
-    };
+    }
+    .expect("image data should be uploaded");
+
+    let tx = state.bundlr.create_transaction_with_tags(
+        image_data.0.to_vec(),
+        vec![
+            Tag::new("User-Agent".into(), "bokoup".into()),
+            Tag::new("Content-Type".into(), image_data.1.clone()),
+        ],
+    );
+
+    let mut response = state.bundlr.send_transaction(tx).await?;
+    let image_id = response.as_object_mut().unwrap();
+
+    let image_url = format!("https://arweave.net/{}", image_id["id"].as_str().unwrap());
+    let json_data_obj = json_data.as_object_mut().expect("should be an object");
+
+    json_data_obj.insert("image".to_string(), image_url.clone().into());
+
+    json_data_obj.insert(
+        "properties".to_string(),
+        json!({
+            "files": [{
+                "uri": image_url,
+                "type": image_data.1
+            }],
+            "category": "image"
+        }),
+    );
+
+    let tx = state.bundlr.create_transaction_with_tags(
+        serde_json::to_vec(json_data_obj)?,
+        vec![
+            Tag::new("User-Agent".into(), "bokoup".into()),
+            Tag::new("Content-Type".into(), "application/json".to_string()),
+        ],
+    );
+
+    let response = state.bundlr.send_transaction(tx).await?;
+    let metadata_id = response.as_object().unwrap();
+
+    let metadata_url = format!(
+        "https://arweave.net/{}",
+        metadata_id["id"].as_str().unwrap()
+    );
 
     // let file_name = field.file_name().unwrap_or("none").to_string();
     // let content_type = field.content_type().unwrap().to_string();
     // let data = field.bytes().await.unwrap();
     // let value = field.value().await.unwrap();
 
-    // tracing::debug!(name, file_name, content_type, data_len = data.len());
+    tracing::debug!(metadata_url);
 
     Ok(Json(ResponseData {
         label: LABEL.to_string(),
