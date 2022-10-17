@@ -75,7 +75,7 @@ async fn main() {
             let tx = bundlr.create_transaction_with_tags(
                 serde_json::to_vec(&json_data).unwrap(),
                 vec![
-                    Tag::new("hello".into(), "world".into()),
+                    Tag::new("User-Agent".into(), "bokoup".into()),
                     Tag::new("Content-Type".into(), "application/json".into()),
                 ],
             );

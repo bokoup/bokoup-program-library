@@ -27,10 +27,10 @@ use bpl_token_metadata::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana_sdk::hash::Hash;
+use solana_sdk::{commitment_config::CommitmentLevel, hash::Hash};
 use std::str::FromStr;
 
-pub async fn create_create_promo_instruction(
+pub fn create_create_promo_instruction(
     payer: Pubkey,
     mint: Pubkey,
     platform: Pubkey,
@@ -98,7 +98,7 @@ pub async fn create_create_promo_instruction(
     })
 }
 
-pub async fn create_mint_promo_instruction(
+pub fn create_mint_promo_instruction(
     payer: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
@@ -134,7 +134,7 @@ pub async fn create_mint_promo_instruction(
     })
 }
 
-pub async fn create_delegate_promo_instruction(
+pub fn create_delegate_promo_instruction(
     payer: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
@@ -165,7 +165,7 @@ pub async fn create_delegate_promo_instruction(
     })
 }
 
-pub async fn create_burn_delegated_promo_instruction(
+pub fn create_burn_delegated_promo_instruction(
     payer: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
@@ -202,8 +202,26 @@ pub async fn create_burn_delegated_promo_instruction(
     })
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub enum SolanaUrl {
+    #[default]
+    Localnet,
+    Devnet,
+}
+
+impl SolanaUrl {
+    pub fn url(&self) -> url::Url {
+        match self {
+            SolanaUrl::Localnet => url::Url::parse("http://127.0.0.1:8899/").unwrap(),
+            SolanaUrl::Devnet => url::Url::parse("https://api.devnet.solana.com/").unwrap(),
+        }
+    }
+}
+
+// Needed to do this since nonblocking client not avaiable in 1.9.20.
 pub struct Solana {
-    pub base_url: url::Url,
+    pub solana_url: SolanaUrl,
+    pub commitment: CommitmentLevel,
     pub client: reqwest::Client,
 }
 
@@ -212,7 +230,7 @@ impl Solana {
         let mut config = serde_json::Map::new();
         config.insert(
             "commitment".to_string(),
-            Value::String("confirmed".to_string()),
+            Value::String(self.commitment.to_string()),
         );
 
         let post_object = PostObject {
@@ -222,7 +240,7 @@ impl Solana {
 
         let result: Value = self
             .client
-            .post(self.base_url.clone())
+            .post(self.solana_url.url())
             .json(&post_object)
             .send()
             .await?
@@ -236,13 +254,16 @@ impl Solana {
 
     pub async fn post_transaction(&self, tx_str: &str) -> Result<SendTransResultObject, AppError> {
         let post_object = PostObject {
-            params: vec![Value::String(tx_str.to_string())],
+            params: vec![
+                Value::String(tx_str.to_string()),
+                json!({"encoding": "base64"}),
+            ],
             ..Default::default()
         };
 
         let result: SendTransResultObject = self
             .client
-            .post(self.base_url.clone())
+            .post(self.solana_url.url())
             .json(&post_object)
             .send()
             .await?
@@ -257,7 +278,10 @@ impl Solana {
 
     pub async fn post_transaction_test(&self, tx_str: &str) -> Result<Value, AppError> {
         let post_object = PostObject {
-            params: vec![Value::String(tx_str.to_string())],
+            params: vec![
+                Value::String(tx_str.to_string()),
+                json!({"encoding": "base64"}),
+            ],
             ..Default::default()
         };
 
@@ -265,7 +289,7 @@ impl Solana {
 
         let result: Value = self
             .client
-            .post(self.base_url.clone())
+            .post(self.solana_url.url())
             .json(&post_object)
             .send()
             .await?
@@ -286,7 +310,7 @@ impl Solana {
         config.insert("encoding".to_string(), Value::String("json".to_string()));
         config.insert(
             "commitment".to_string(),
-            Value::String("confirmed".to_string()),
+            Value::String(self.commitment.to_string()),
         );
 
         let post_object = PostObject {
@@ -297,7 +321,7 @@ impl Solana {
 
         let result: GetTransResultObject = self
             .client
-            .post(self.base_url.clone())
+            .post(self.solana_url.url())
             .json(&post_object)
             .send()
             .await?
@@ -316,7 +340,7 @@ impl Solana {
 
         let result: Value = self
             .client
-            .post(self.base_url.clone())
+            .post(self.solana_url.url())
             .json(&post_object)
             .send()
             .await?

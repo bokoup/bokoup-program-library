@@ -33,8 +33,7 @@ pub async fn handler(
         mint,
         state.platform.pubkey(),
         memo,
-    )
-    .await?;
+    )?;
 
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;
