@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use anchor_client::Cluster;
 use anchor_lang::{
     prelude::Pubkey,
     InstructionData, ToAccountMetas,
@@ -202,25 +203,9 @@ pub fn create_burn_delegated_promo_instruction(
     })
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub enum SolanaUrl {
-    #[default]
-    Localnet,
-    Devnet,
-}
-
-impl SolanaUrl {
-    pub fn url(&self) -> url::Url {
-        match self {
-            SolanaUrl::Localnet => url::Url::parse("http://127.0.0.1:8899/").unwrap(),
-            SolanaUrl::Devnet => url::Url::parse("https://api.devnet.solana.com/").unwrap(),
-        }
-    }
-}
-
 // Needed to do this since nonblocking client not avaiable in 1.9.20.
 pub struct Solana {
-    pub solana_url: SolanaUrl,
+    pub cluster: Cluster,
     pub commitment: CommitmentLevel,
     pub client: reqwest::Client,
 }
@@ -240,7 +225,7 @@ impl Solana {
 
         let result: Value = self
             .client
-            .post(self.solana_url.url())
+            .post(self.cluster.url())
             .json(&post_object)
             .send()
             .await?
@@ -263,7 +248,7 @@ impl Solana {
 
         let result: SendTransResultObject = self
             .client
-            .post(self.solana_url.url())
+            .post(self.cluster.url())
             .json(&post_object)
             .send()
             .await?
@@ -289,7 +274,7 @@ impl Solana {
 
         let result: Value = self
             .client
-            .post(self.solana_url.url())
+            .post(self.cluster.url())
             .json(&post_object)
             .send()
             .await?
@@ -321,7 +306,7 @@ impl Solana {
 
         let result: GetTransResultObject = self
             .client
-            .post(self.solana_url.url())
+            .post(self.cluster.url())
             .json(&post_object)
             .send()
             .await?
@@ -340,7 +325,7 @@ impl Solana {
 
         let result: Value = self
             .client
-            .post(self.solana_url.url())
+            .post(self.cluster.url())
             .json(&post_object)
             .send()
             .await?

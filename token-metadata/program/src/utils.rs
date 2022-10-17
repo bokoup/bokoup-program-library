@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{CreateMetaData, CreateNonFungible, TransferSol};
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::get_associated_token_address;
@@ -125,4 +127,12 @@ pub fn find_promo_address(mint: &Pubkey) -> (Pubkey, u8) {
 
 pub fn find_metadata_address(mint: &Pubkey) -> (Pubkey, u8) {
     find_metadata_account(mint)
+}
+
+pub fn find_program_data_address() -> Pubkey {
+    Pubkey::find_program_address(
+        &[&crate::id().as_ref()],
+        &Pubkey::from_str("BPFLoaderUpgradeab1e11111111111111111111111").unwrap(),
+    )
+    .0
 }

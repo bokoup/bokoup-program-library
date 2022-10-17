@@ -9,7 +9,7 @@ use mpl_token_metadata::state::{
 //==============================
 
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AdminSettings {
     pub platform: Pubkey,
     pub create_promo_lamports: u64,

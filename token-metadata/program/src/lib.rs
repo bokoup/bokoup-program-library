@@ -83,8 +83,12 @@ pub mod bpl_token_metadata {
 pub struct CreateAdminSettings<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(init, seeds = [ADMIN_PREFIX.as_bytes()], bump, payer = payer, space = AdminSettings::LEN)]
+    #[account(init_if_needed, seeds = [ADMIN_PREFIX.as_bytes()], bump, payer = payer, space = AdminSettings::LEN)]
     pub admin_settings: Account<'info, AdminSettings>,
+    #[account(constraint = program.programdata_address()? == Some(program_data.key()))]
+    pub program: Program<'info, crate::program::BplTokenMetadata>,
+    #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()))]
+    pub program_data: Account<'info, ProgramData>,
     pub system_program: Program<'info, System>,
 }
 

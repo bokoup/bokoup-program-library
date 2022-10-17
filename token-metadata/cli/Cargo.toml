@@ -1,11 +1,15 @@
 [package]
-name = "bpl-storage"
+name = "bpl-token-metadata-cli"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anchor-client = "0.24.2"
+anyhow = "1.0.58"
 bs58 = "0.4.0"
-bundlr-sdk = { version = "0.3.0", path = "../../bundlr" }
+bpl-api-tx = { path = "../../api-tx"}
+bpl-token-metadata = { path = "../program" }
+bundlr-sdk = { git = "https://github.com/CalebEverett/bundlr-rust-sdk", branch = "roll_back_primitive_type" }
 clap = { version="3.2.22", features=["derive"] }
 ed25519-dalek = "1.0.1"
 dotenv = "0.15"

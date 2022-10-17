@@ -737,22 +737,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bpl-storage"
-version = "0.1.0"
-dependencies = [
- "bs58 0.4.0",
- "bundlr-sdk",
- "clap 3.2.22",
- "dotenv",
- "ed25519-dalek",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
-]
-
-[[package]]
 name = "bpl-token-metadata"
 version = "0.1.0"
 dependencies = [
@@ -763,6 +747,26 @@ dependencies = [
  "mpl-token-metadata",
  "solana-sdk",
  "spl-memo",
+]
+
+[[package]]
+name = "bpl-token-metadata-cli"
+version = "0.1.0"
+dependencies = [
+ "anchor-client",
+ "anyhow",
+ "bpl-api-tx",
+ "bpl-token-metadata",
+ "bs58 0.4.0",
+ "bundlr-sdk",
+ "clap 3.2.22",
+ "dotenv",
+ "ed25519-dalek",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
 ]
 
 [[package]]
@@ -807,6 +811,7 @@ checksum = "c1ad822118d20d2c234f427000d5acc36eabe1e29a348c89b63dd60b13f28e5d"
 [[package]]
 name = "bundlr-sdk"
 version = "0.3.0"
+source = "git+https://github.com/CalebEverett/bundlr-rust-sdk?branch=roll_back_primitive_type#6776288f95cb3c3f4e7f714a0c53efbb46e85c6e"
 dependencies = [
  "anyhow",
  "async-recursion",

@@ -1,3 +1,4 @@
+use anchor_client::Cluster;
 use axum::{
     error_handling::HandleErrorLayer,
     http::{header, Method, StatusCode},
@@ -19,10 +20,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use url::Url;
-use utils::{
-    clover::Clover,
-    solana::{Solana, SolanaUrl},
-};
+use utils::{clover::Clover, solana::Solana};
 
 pub mod error;
 pub mod handlers;
@@ -41,7 +39,7 @@ pub struct State {
 }
 
 impl State {
-    fn new(solana_url: SolanaUrl) -> Self {
+    fn new(cluster: Cluster) -> Self {
         let data = std::fs::read(PROMO_OWNER_KEYPAIR_PATH).unwrap();
         let bytes: Vec<u8> = serde_json::from_slice(&data).unwrap();
         let keypair = DalekKeypair::from_bytes(&bytes).unwrap();
@@ -51,7 +49,7 @@ impl State {
             promo_owner: read_keypair_file(PROMO_OWNER_KEYPAIR_PATH).unwrap(),
             platform: read_keypair_file("/keys/platform-keypair.json").unwrap(),
             solana: Solana {
-                solana_url,
+                cluster,
                 commitment: CommitmentLevel::Confirmed,
                 client: reqwest::Client::builder()
                     .timeout(Duration::from_secs(10))
@@ -76,7 +74,7 @@ impl State {
     }
 }
 
-pub fn create_app(solana_url: SolanaUrl) -> Router {
+pub fn create_app(cluster: Cluster) -> Router {
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_headers([header::CONTENT_TYPE])
@@ -120,7 +118,7 @@ pub fn create_app(solana_url: SolanaUrl) -> Router {
                 .concurrency_limit(1024)
                 .timeout(Duration::from_secs(30))
                 .layer(TraceLayer::new_for_http())
-                .layer(AddExtensionLayer::new(Arc::new(State::new(solana_url))))
+                .layer(AddExtensionLayer::new(Arc::new(State::new(cluster))))
                 .into_inner(),
         )
 }
@@ -169,7 +167,7 @@ pub mod test {
             .init();
 
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let app = create_app(SolanaUrl::Devnet);
+        let app = create_app(Cluster::Devnet);
         let mint = Pubkey::new_unique();
         let message = urlencoding::encode(MESSAGE);
         let response = app
@@ -203,8 +201,8 @@ pub mod test {
     #[tokio::test]
     async fn test_get_mint_promo_tx() {
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let state = State::new(SolanaUrl::Devnet);
-        let app = create_app(SolanaUrl::Devnet);
+        let state = State::new(Cluster::Devnet);
+        let app = create_app(Cluster::Devnet);
         let token_owner = Pubkey::new_unique();
         let mint = Pubkey::new_unique();
 
@@ -271,8 +269,8 @@ pub mod test {
         dotenv::dotenv().ok();
 
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let state = State::new(SolanaUrl::Devnet);
-        let app = create_app(SolanaUrl::Devnet);
+        let state = State::new(Cluster::Devnet);
+        let app = create_app(Cluster::Devnet);
         let token_owner = Pubkey::new_unique();
         let mint = Pubkey::new_unique();
 
@@ -340,8 +338,8 @@ pub mod test {
         dotenv::dotenv().ok();
 
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let state = State::new(SolanaUrl::Devnet);
-        let app = create_app(SolanaUrl::Devnet);
+        let state = State::new(Cluster::Devnet);
+        let app = create_app(Cluster::Devnet);
         let token_owner = Pubkey::new_unique();
         let mint = Pubkey::new_unique();
 
@@ -409,10 +407,7 @@ pub mod test {
         // This test requires a local validator to be running. Whereas the other tests return prepared
         // transactions, this one send a transaction to create a Promo on chain.
         // let test_listener =
-        if let Ok(_) = TcpListener::bind((
-            SolanaUrl::Localnet.url().host_str().unwrap(),
-            SolanaUrl::Localnet.url().port().unwrap(),
-        )) {
+        if let Ok(_) = TcpListener::bind("127.0.0.1:8899".parse::<SocketAddr>().unwrap()) {
             assert!(false, "localnet validator not started")
         }
 
@@ -422,7 +417,7 @@ pub mod test {
         tokio::spawn(async move {
             axum::Server::from_tcp(listener)
                 .unwrap()
-                .serve(create_app(SolanaUrl::Localnet).into_make_service())
+                .serve(create_app(Cluster::Localnet).into_make_service())
                 .await
                 .unwrap();
         });

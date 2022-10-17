@@ -3,7 +3,7 @@ members=[
   "api-data",
   "api-tx",
   "indexer",
-  "storage",
+  "token-metadata/cli",
   "token-metadata/program",
 ]
 
