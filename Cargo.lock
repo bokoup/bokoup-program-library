@@ -749,6 +749,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bpl-token-metadata-cli"
+version = "0.1.0"
+dependencies = [
+ "anchor-client",
+ "anyhow",
+ "bpl-api-tx",
+ "bpl-token-metadata",
+ "bs58 0.4.0",
+ "bundlr-sdk",
+ "clap 3.2.22",
+ "dotenv",
+ "ed25519-dalek",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
 name = "brotli"
 version = "3.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
