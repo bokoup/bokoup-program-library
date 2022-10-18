@@ -1,11 +1,11 @@
 FROM rust as build-env
-COPY token-metadata /token-metadata
-COPY demo-api /app
+COPY token-metadata/program /token-metadata/program
+COPY api-tx /app
 WORKDIR /app
 
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc
-COPY --from=build-env /app/target/release/bpl-demo-api /
+COPY --from=build-env /app/target/release/bpl-api-tx /
 EXPOSE 8080
-CMD ["./bpl-demo-api"]
+CMD ["./bpl-api-tx"]

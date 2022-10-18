@@ -27,13 +27,8 @@ pub async fn handler(
     let payer = state.promo_owner.pubkey();
 
     let mint = Pubkey::from_str(&mint_string)?;
-    let instruction = create_burn_delegated_promo_instruction(
-        payer,
-        token_owner,
-        mint,
-        state.platform.pubkey(),
-        memo,
-    )?;
+    let instruction =
+        create_burn_delegated_promo_instruction(payer, token_owner, mint, state.platform, memo)?;
 
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;

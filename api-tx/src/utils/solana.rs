@@ -1,5 +1,4 @@
 use crate::error::AppError;
-use anchor_client::Cluster;
 use anchor_lang::{
     prelude::Pubkey,
     InstructionData, ToAccountMetas,
@@ -27,6 +26,7 @@ use bpl_token_metadata::{
     },
 };
 use serde::{Deserialize, Serialize};
+
 use serde_json::{json, Value};
 use solana_sdk::{commitment_config::CommitmentLevel, hash::Hash};
 use std::str::FromStr;
@@ -396,4 +396,94 @@ pub struct Meta {
     pub pre_balances: Vec<u64>,
     pub pre_token_balances: Vec<u64>,
     pub status: Status,
+}
+
+// Copied here to avoid depending on anchor client and in turn solana client which was bonking
+// the cloud run image because of the usb interface hidapi.
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum Cluster {
+    Testnet,
+    Mainnet,
+    Devnet,
+    Localnet,
+    Debug,
+    Custom(String, String),
+}
+
+impl Default for Cluster {
+    fn default() -> Self {
+        Cluster::Localnet
+    }
+}
+
+impl FromStr for Cluster {
+    type Err = AppError;
+    fn from_str(s: &str) -> Result<Cluster, AppError> {
+        match s.to_lowercase().as_str() {
+            "t" | "testnet" => Ok(Cluster::Testnet),
+            "m" | "mainnet" => Ok(Cluster::Mainnet),
+            "d" | "devnet" => Ok(Cluster::Devnet),
+            "l" | "localnet" => Ok(Cluster::Localnet),
+            "g" | "debug" => Ok(Cluster::Debug),
+            _ if s.starts_with("http") => {
+                let http_url = s;
+
+                let mut ws_url = url::Url::parse(http_url).map_err(AppError::UrlParseError) ?;
+                if let Some(port) = ws_url.port() {
+                    ws_url.set_port(Some(port + 1))
+                        .map_err(|_| AppError::GenericError("Unable to set port".to_string()))?;
+                }
+                if ws_url.scheme() == "https" {
+                    ws_url.set_scheme("wss")
+                        .map_err(|_| AppError::GenericError("Unable to set scheme".to_string()))?;
+                } else {
+                    ws_url.set_scheme("ws")
+                        .map_err(|_| AppError::GenericError("Unable to set scheme".to_string()))?;
+                }
+
+
+                Ok(Cluster::Custom(http_url.to_string(), ws_url.to_string()))
+            }
+            _ => Err(AppError::GenericError(
+                "Cluster must be one of [localnet, testnet, mainnet, devnet] or be an http or https url\n".to_string(),
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for Cluster {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let clust_str = match self {
+            Cluster::Testnet => "testnet",
+            Cluster::Mainnet => "mainnet",
+            Cluster::Devnet => "devnet",
+            Cluster::Localnet => "localnet",
+            Cluster::Debug => "debug",
+            Cluster::Custom(url, _ws_url) => url,
+        };
+        write!(f, "{}", clust_str)
+    }
+}
+
+impl Cluster {
+    pub fn url(&self) -> &str {
+        match self {
+            Cluster::Devnet => "https://api.devnet.solana.com",
+            Cluster::Testnet => "https://api.testnet.solana.com",
+            Cluster::Mainnet => "https://api.mainnet-beta.solana.com",
+            Cluster::Localnet => "http://127.0.0.1:8899",
+            Cluster::Debug => "http://34.90.18.145:8899",
+            Cluster::Custom(url, _ws_url) => url,
+        }
+    }
+    pub fn ws_url(&self) -> &str {
+        match self {
+            Cluster::Devnet => "wss://api.devnet.solana.com",
+            Cluster::Testnet => "wss://api.testnet.solana.com",
+            Cluster::Mainnet => "wss://api.mainnet-beta.solana.com",
+            Cluster::Localnet => "ws://127.0.0.1:9000",
+            Cluster::Debug => "ws://34.90.18.145:9000",
+            Cluster::Custom(_url, ws_url) => ws_url,
+        }
+    }
 }

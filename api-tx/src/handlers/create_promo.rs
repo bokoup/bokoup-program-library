@@ -73,7 +73,7 @@ pub async fn handler(
     let ix = create_create_promo_instruction(
         state.promo_owner.pubkey(),
         mint_keypair.pubkey(),
-        state.platform.pubkey(),
+        state.platform,
         name,
         symbol,
         uri,

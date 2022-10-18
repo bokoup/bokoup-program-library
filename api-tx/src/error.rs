@@ -13,8 +13,8 @@ use axum::{
 /// Errors propagated by library functions.
 #[derive(Error, Debug)]
 pub enum AppError {
-    #[error("generic error")]
-    GenericError,
+    #[error("generic error: {0}")]
+    GenericError(String),
     #[error("bincode: {0}")]
     BincodeError(#[from] Box<bincode::ErrorKind>),
     #[error("bundlr: {0}")]
@@ -48,7 +48,7 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response<BoxBody> {
         let status = match self {
-            AppError::GenericError => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::GenericError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             _ => StatusCode::BAD_REQUEST,
         };
 

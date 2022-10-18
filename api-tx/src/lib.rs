@@ -1,4 +1,3 @@
-use anchor_client::Cluster;
 use axum::{
     error_handling::HandleErrorLayer,
     http::{header, Method, StatusCode},
@@ -10,9 +9,10 @@ use bundlr_sdk::{Bundlr, Ed25519Signer};
 use ed25519_dalek::Keypair as DalekKeypair;
 use handlers::*;
 use solana_sdk::{
-    commitment_config::CommitmentLevel, signature::read_keypair_file, signer::keypair::Keypair,
+    commitment_config::CommitmentLevel, pubkey::Pubkey, signature::read_keypair_file,
+    signer::keypair::Keypair,
 };
-use std::{borrow::Cow, sync::Arc, time::Duration};
+use std::{borrow::Cow, str::FromStr, sync::Arc, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{
     add_extension::AddExtensionLayer,
@@ -20,7 +20,10 @@ use tower_http::{
     trace::TraceLayer,
 };
 use url::Url;
-use utils::{clover::Clover, solana::Solana};
+use utils::{
+    clover::Clover,
+    solana::{Cluster, Solana},
+};
 
 pub mod error;
 pub mod handlers;
@@ -32,7 +35,7 @@ pub const PROMO_OWNER_KEYPAIR_PATH: &str = "/keys/promo_owner-keypair.json";
 
 pub struct State {
     pub promo_owner: Keypair,
-    pub platform: Keypair,
+    pub platform: Pubkey,
     pub solana: Solana,
     pub clover: Clover,
     pub bundlr: bundlr_sdk::Bundlr<Ed25519Signer>,
@@ -47,7 +50,7 @@ impl State {
 
         Self {
             promo_owner: read_keypair_file(PROMO_OWNER_KEYPAIR_PATH).unwrap(),
-            platform: read_keypair_file("/keys/platform-keypair.json").unwrap(),
+            platform: Pubkey::from_str("2R7GkXvQQS4iHptUvQMhDvRSNXL8tAuuASNvCYgz3GQW").unwrap(),
             solana: Solana {
                 cluster,
                 commitment: CommitmentLevel::Confirmed,
@@ -380,7 +383,7 @@ pub mod test {
             state.promo_owner.pubkey(),
             token_owner,
             mint,
-            state.platform.pubkey(),
+            state.platform,
             None,
         )
         .unwrap();

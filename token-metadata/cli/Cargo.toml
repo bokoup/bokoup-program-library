@@ -9,7 +9,7 @@ anyhow = "1.0.58"
 bs58 = "0.4.0"
 bpl-api-tx = { path = "../../api-tx"}
 bpl-token-metadata = { path = "../program" }
-bundlr-sdk = { git = "https://github.com/CalebEverett/bundlr-rust-sdk", branch = "roll_back_primitive_type" }
+bundlr-sdk = { git = "https://github.com/CalebEverett/bundlr-rust-sdk", branch = "roll_back_primitive_type", features = ["solana"] }
 clap = { version="3.2.22", features=["derive"] }
 ed25519-dalek = "1.0.1"
 dotenv = "0.15"

@@ -1,7 +1,7 @@
 use bpl_api_data::{apply_migrations, get_client, reset, DatabaseURL};
 use clap::{Parser, Subcommand};
 use tokio_postgres::Error;
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::prelude::*;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
