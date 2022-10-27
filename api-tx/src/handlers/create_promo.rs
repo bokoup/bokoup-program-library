@@ -2,7 +2,7 @@ use crate::{
     error::AppError,
     utils::{
         bundlr::{upload_image, upload_metadata_json},
-        solana::{create_create_promo_instruction, SendTransResultObject},
+        solana::create_create_promo_instruction,
     },
     State,
 };
@@ -14,12 +14,12 @@ use std::sync::Arc;
 pub async fn handler(
     mut multipart: Multipart,
     Extension(state): Extension<Arc<State>>,
-) -> Result<Json<SendTransResultObject>, AppError> {
+) -> Result<Json<Value>, AppError> {
     // Parse data - two parts - json data and image.
-    let mut json_data = if let Some(field) = multipart.next_field().await.unwrap() {
-        if field.name().expect("name field should exist") == "json-data" {
+    let mut metadata_data = if let Some(field) = multipart.next_field().await.unwrap() {
+        if field.name().expect("name field should exist") == "metadata" {
             let json_string = field.text().await.map_err(|_| {
-                AppError::CreatePromoRequestError("trait attribute value not valid".to_string())
+                AppError::CreatePromoRequestError("metadata value not valid".to_string())
             })?;
             Ok(serde_json::from_str::<Value>(&json_string)?)
         } else {
@@ -53,20 +53,37 @@ pub async fn handler(
         ))
     }?;
 
-    let json_data_obj = json_data
-        .as_object_mut()
-        .ok_or(AppError::CreatePromoRequestError(
-            "json data part should be an object".to_string(),
-        ))?;
+    let memo = if let Some(field) = multipart.next_field().await.unwrap() {
+        if field.name().expect("name field should exist") == "memo" {
+            let memo_string = field.text().await.map_err(|_| {
+                AppError::CreatePromoRequestError("memo value not valid".to_string())
+            })?;
+            Some(memo_string)
+        } else {
+            return Err(AppError::CreatePromoRequestError(
+                "invalid field name".to_string(),
+            ));
+        }
+    } else {
+        None
+    };
+
+    let metadata_data_obj =
+        metadata_data
+            .as_object_mut()
+            .ok_or(AppError::CreatePromoRequestError(
+                "metadata data part should be an object".to_string(),
+            ))?;
 
     // Upload image to Arweave.
     let (image_url, content_type, state) = upload_image(image_data, state).await?;
 
     // Upload metadata json to Arweave.
-    let (uri, state) = upload_metadata_json(json_data_obj, image_url, content_type, state).await?;
+    let (uri, state) =
+        upload_metadata_json(metadata_data_obj, image_url, content_type, state).await?;
 
     // Parse promo args.
-    let (name, symbol, max_mint, max_burn) = get_promo_args(json_data_obj)?;
+    let (name, symbol, max_mint, max_burn) = get_promo_args(metadata_data_obj)?;
     let mint_keypair = Keypair::new();
 
     // Create promo instruction.
@@ -80,7 +97,7 @@ pub async fn handler(
         max_mint,
         max_burn,
         true,
-        None,
+        memo,
     )?;
 
     let mut tx = Transaction::new_with_payer(&[ix], Some(&state.promo_owner.pubkey()));
@@ -89,24 +106,24 @@ pub async fn handler(
 
     let serialized = bincode::serialize(&tx)?;
     let tx_str = base64::encode(serialized);
-    let response = state.solana.post_transaction(&tx_str).await?;
+    let result = state.solana.post_transaction_test(&tx_str).await?;
 
-    tracing::debug!(response = format!("{:?}", response));
+    tracing::debug!(result = format!("{:?}", result));
 
-    Ok(Json(response))
+    Ok(Json(result))
 }
 
 pub fn get_promo_args(
-    json_data_obj: &mut Map<String, Value>,
+    metadata_data_obj: &mut Map<String, Value>,
 ) -> Result<(String, String, Option<u32>, Option<u32>), AppError> {
-    let name = json_data_obj["name"]
+    let name = metadata_data_obj["name"]
         .as_str()
         .ok_or(AppError::CreatePromoRequestError(
             "name field should exist".to_string(),
         ))?
         .to_string();
 
-    let symbol = json_data_obj["symbol"]
+    let symbol = metadata_data_obj["symbol"]
         .as_str()
         .ok_or(AppError::CreatePromoRequestError(
             "symbol field should exist".to_string(),
@@ -114,36 +131,40 @@ pub fn get_promo_args(
         .to_string();
 
     // Return max_mint and max_burn if attributes exists in json data.
-    let (max_mint, max_burn) = if let Some(attributes) = json_data_obj["attributes"].as_array() {
-        let max_mint: Option<u32> = attributes
-            .iter()
-            .filter_map(|a| {
-                let attribute = a.as_object()?;
-                if let Some(value) = attribute.get("max_mint") {
-                    value.as_u64()
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<u64>>()
-            .first()
-            .map(|v| v.clone() as u32);
+    let (max_mint, max_burn) = if let Some(value) = metadata_data_obj.get("attributes") {
+        if let Some(attributes) = value.as_array() {
+            let max_mint: Option<u32> = attributes
+                .iter()
+                .filter_map(|a| {
+                    let attribute = a.as_object()?;
+                    if let Some(value) = attribute.get("maxMint") {
+                        value.as_u64()
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<u64>>()
+                .first()
+                .map(|v| v.clone() as u32);
 
-        let max_burn: Option<u32> = attributes
-            .iter()
-            .filter_map(|a| {
-                let attribute = a.as_object()?;
-                if let Some(value) = attribute.get("max_burn") {
-                    value.as_u64()
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<u64>>()
-            .first()
-            .map(|v| v.clone() as u32);
+            let max_burn: Option<u32> = attributes
+                .iter()
+                .filter_map(|a| {
+                    let attribute = a.as_object()?;
+                    if let Some(value) = attribute.get("maxBurn") {
+                        value.as_u64()
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<u64>>()
+                .first()
+                .map(|v| v.clone() as u32);
 
-        (max_mint, max_burn)
+            (max_mint, max_burn)
+        } else {
+            (None, None)
+        }
     } else {
         (None, None)
     };

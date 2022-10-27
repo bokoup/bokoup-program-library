@@ -6,6 +6,7 @@ INSERT INTO metadata (
     name,
     symbol,
     uri,
+    metadata_json,
     seller_fee_basis_points,
     primary_sale_happened,
     is_mutable,
@@ -19,7 +20,7 @@ INSERT INTO metadata (
     slot,
     write_version
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 ON CONFLICT ON CONSTRAINT metadata_pkey DO UPDATE 
     SET
         key = EXCLUDED.key,
@@ -28,6 +29,7 @@ ON CONFLICT ON CONSTRAINT metadata_pkey DO UPDATE
         name = EXCLUDED.name,
         symbol = EXCLUDED.symbol,
         uri = EXCLUDED.uri,
+        metadata_json = EXCLUDED.metadata_json,
         seller_fee_basis_points = EXCLUDED.seller_fee_basis_points,
         primary_sale_happened = EXCLUDED.primary_sale_happened,
         is_mutable = EXCLUDED.is_mutable,

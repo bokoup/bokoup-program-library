@@ -408,8 +408,7 @@ pub mod test {
         dotenv::dotenv().ok();
 
         // This test requires a local validator to be running. Whereas the other tests return prepared
-        // transactions, this one send a transaction to create a Promo on chain.
-        // let test_listener =
+        // transactions, this one sends a transaction to create a Promo on chain.
         if let Ok(_) = TcpListener::bind("127.0.0.1:8899".parse::<SocketAddr>().unwrap()) {
             assert!(false, "localnet validator not started")
         }
@@ -434,7 +433,7 @@ pub mod test {
             mime_guess::mime::OCTET_STREAM.to_string()
         };
 
-        let json_data = serde_json::json!({
+        let metadata_data = serde_json::json!({
             "name": "Test Promo",
             "symbol": "TEST",
             "description": "Bokoup test promotion.",
@@ -455,8 +454,8 @@ pub mod test {
 
         let form = reqwest::multipart::Form::new()
             .part(
-                "json-data",
-                reqwest::multipart::Part::text(json_data.to_string())
+                "metadata",
+                reqwest::multipart::Part::text(metadata_data.to_string())
                     .mime_str("application/json")
                     .unwrap(),
             )
@@ -466,7 +465,12 @@ pub mod test {
                     .file_name(file_path.split("/").last().unwrap())
                     .mime_str(&content_type)
                     .unwrap(),
-            );
+            )
+            // .text(
+            //     "memo",
+            //     serde_json::json!({"reference": "jingus", "memo": "Have a niceday"}).to_string(),
+            // )
+            ;
 
         let client = reqwest::Client::new();
         let response = client
@@ -474,19 +478,18 @@ pub mod test {
             .multipart(form)
             .send()
             .await
+            .unwrap()
+            .json::<serde_json::Value>()
+            .await
             .unwrap();
 
-        println!("{:?}", response.text().await)
-        // assert_eq!(
-        //     response.status(),
-        //     StatusCode::OK,
-        //     "{}",
-        //     response
-        //         .json::<serde_json::Value>()
-        //         .await
-        //         .unwrap()
-        //         .as_object()
-        //         .unwrap()["error"]
-        // );
+        println!("{:?}", &response);
+        assert!(&response
+            .as_object()
+            .unwrap()
+            .get("result")
+            .unwrap()
+            .as_str()
+            .is_some());
     }
 }

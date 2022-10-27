@@ -85,10 +85,10 @@ pub struct CreateAdminSettings<'info> {
     pub payer: Signer<'info>,
     #[account(init_if_needed, seeds = [ADMIN_PREFIX.as_bytes()], bump, payer = payer, space = AdminSettings::LEN)]
     pub admin_settings: Account<'info, AdminSettings>,
-    #[account(constraint = program.programdata_address()? == Some(program_data.key()))]
-    pub program: Program<'info, crate::program::BplTokenMetadata>,
-    #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()))]
-    pub program_data: Account<'info, ProgramData>,
+    // #[account(constraint = program.programdata_address()? == Some(program_data.key()))]
+    // pub program: Program<'info, crate::program::BplTokenMetadata>,
+    // #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()))]
+    // pub program_data: Account<'info, ProgramData>,
     pub system_program: Program<'info, System>,
 }
 
@@ -137,8 +137,8 @@ pub struct MintPromoToken<'info> {
     pub authority: UncheckedAccount<'info>,
     #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
-    #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
-    pub admin_settings: Account<'info, AdminSettings>,
+    // #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
+    // pub admin_settings: Account<'info, AdminSettings>,
     #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = token_owner)]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,

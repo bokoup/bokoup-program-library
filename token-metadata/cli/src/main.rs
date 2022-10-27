@@ -119,8 +119,8 @@ async fn main() -> anyhow::Result<()> {
                 .accounts(bpl_token_metadata::accounts::CreateAdminSettings {
                     payer,
                     admin_settings,
-                    program: bpl_token_metadata::id(),
-                    program_data,
+                    // program: bpl_token_metadata::id(),
+                    // program_data,
                     system_program: system_program::ID,
                 })
                 .args(instruction::CreateAdminSettings {

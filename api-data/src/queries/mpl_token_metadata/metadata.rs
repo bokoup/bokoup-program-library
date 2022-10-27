@@ -1,7 +1,7 @@
 use crate::queries::mpl_token_metadata::creator;
 use futures::future::try_join;
 use mpl_token_metadata::state::{Key, Metadata, TokenStandard, UseMethod};
-use tokio_postgres::Client;
+use tokio_postgres::{types::Json, Client};
 use tracing::{error, info};
 
 const UPSERT_QUERY: &str = include_str!("metadata_upsert.sql");
@@ -71,6 +71,16 @@ pub async fn upsert(
     let slot = slot as i64;
     let write_version = write_version as i64;
 
+    let metadata_json: Option<serde_json::Value> = if let Ok(response) = reqwest::get(&uri).await {
+        if let Ok(result) = response.json::<serde_json::Value>().await {
+            Some(result)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let result = try_join(
         client.query_one(
             UPSERT_QUERY,
@@ -82,6 +92,7 @@ pub async fn upsert(
                 &name,
                 &symbol,
                 &uri,
+                &Json::<Option<serde_json::Value>>(metadata_json),
                 &seller_fee_basis_points,
                 &primary_sale_happened,
                 &is_mutable,

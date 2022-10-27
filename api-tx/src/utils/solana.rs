@@ -107,7 +107,6 @@ pub fn create_mint_promo_instruction(
 ) -> Result<Instruction, AppError> {
     let (authority, _auth_bump) = find_authority_address();
     let (promo, _promo_bump) = find_promo_address(&mint);
-    let (admin_settings, _admin_bump) = find_admin_address();
     let token_account = find_associated_token_address(&token_owner, &mint);
 
     let accounts = mint_promo_token_accounts {
@@ -116,7 +115,6 @@ pub fn create_mint_promo_instruction(
         mint,
         authority,
         promo,
-        admin_settings,
         token_account,
         token_program: anchor_spl::token::ID,
         memo_program: spl_memo::ID,
@@ -246,19 +244,22 @@ impl Solana {
             ..Default::default()
         };
 
-        let result: SendTransResultObject = self
+        let response = self
             .client
             .post(self.cluster.url())
             .json(&post_object)
             .send()
-            .await?
-            .json()
             .await
-            .map_err(|e| AppError::SolanaPostError(e))?;
+            .map_err(|e| AppError::SolanaPostError(e.to_string()))?;
+
+        let result = response.json::<SendTransResult>().await?;
 
         tracing::debug!("post_transaction_result {:?}", &result);
 
-        Ok(result)
+        match result {
+            SendTransResult::Success(result) => Ok(result),
+            SendTransResult::Error(message) => Err(AppError::SolanaPostError(message.message)),
+        }
     }
 
     pub async fn post_transaction_test(&self, tx_str: &str) -> Result<Value, AppError> {
@@ -280,7 +281,7 @@ impl Solana {
             .await?
             .json()
             .await
-            .map_err(|e| AppError::SolanaPostError(e))?;
+            .map_err(|e| AppError::SolanaPostError(e.to_string()))?;
 
         tracing::debug!("post_transaction_result {:?}", &result);
 
@@ -358,9 +359,18 @@ impl Default for PostObject {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SendTransResultObject {
-    pub jsonrpc: String,
     pub result: String,
-    pub id: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SendTransErrortObject {
+    pub message: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum SendTransResult {
+    Success(SendTransResultObject),
+    Error(SendTransErrortObject),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

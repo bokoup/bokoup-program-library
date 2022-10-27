@@ -39,14 +39,14 @@ pub async fn upload_image(
 }
 
 pub async fn upload_metadata_json(
-    json_data_obj: &mut Map<String, Value>,
+    metadata_data_obj: &mut Map<String, Value>,
     image_url: String,
     content_type: String,
     state: Arc<State>,
 ) -> Result<(String, Arc<State>), AppError> {
-    json_data_obj.insert("image".to_string(), image_url.clone().into());
+    metadata_data_obj.insert("image".to_string(), image_url.clone().into());
 
-    json_data_obj.insert(
+    metadata_data_obj.insert(
         "properties".to_string(),
         json!({
             "files": [{
@@ -59,7 +59,7 @@ pub async fn upload_metadata_json(
 
     // Upload json metadata to Arweave and get id back for inclusion in creation of on chain Promo.
     let tx = state.bundlr.create_transaction_with_tags(
-        serde_json::to_vec(json_data_obj)?,
+        serde_json::to_vec(metadata_data_obj)?,
         vec![
             Tag::new("User-Agent".into(), "bokoup".into()),
             Tag::new("Content-Type".into(), "application/json".to_string()),

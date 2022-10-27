@@ -662,6 +662,7 @@ dependencies = [
  "mpl-auction-house",
  "mpl-token-metadata",
  "refinery",
+ "reqwest",
  "serde_json",
  "solana-sdk",
  "spl-token",

@@ -4,19 +4,17 @@ INSERT INTO delegate_promo_token (
     token_owner,
     authority,
     promo,
-    admin_settings,
     token_account,
     memo,
     slot
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT ON CONSTRAINT delegate_promo_token_pkey DO UPDATE 
     SET
         payer = EXCLUDED.payer,
         token_owner = EXCLUDED.token_owner,
         authority = EXCLUDED.authority,
         promo = EXCLUDED.promo,
-        admin_settings = EXCLUDED.admin_settings,
         token_account = EXCLUDED.token_account,
         memo = EXCLUDED.memo,
         slot = EXCLUDED.slot,
