@@ -2,7 +2,7 @@ use bpl_token_metadata::state::PromoGroup;
 use tokio_postgres::{types::Json, Client};
 use tracing::{error, info};
 
-const UPSERT_QUERY: &str = include_str!("group_upsert.sql");
+const UPSERT_QUERY: &str = include_str!("promo_group_upsert.sql");
 
 #[tracing::instrument(skip_all)]
 pub async fn upsert(

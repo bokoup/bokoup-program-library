@@ -12,7 +12,7 @@ import {
   Mint,
 } from '@solana/spl-token';
 import idl from '../../../target/idl/bpl_token_metadata.json';
-import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds, Group } from '.';
+import { Promo, PromoExtended, DataV2, MetadataJson, AdminSettings, PromoExtendeds, PromoGroup } from '.';
 const camelcaseKeysDeep = require('camelcase-keys-deep');
 
 export class TokenMetadataProgram {
@@ -82,36 +82,34 @@ export class TokenMetadataProgram {
     return adminSettings;
   }
 
-  async createGroup(
+  async createPromoGroup(
     seed: PublicKey,
-    membersCapacity: number,
     members: Array<PublicKey>,
-    groupSeed: PublicKey,
     lamports: number,
     memo: string | null
   ): Promise<[PublicKey, number]> {
-    const [group, nonce] = await this.findGroupAddress(groupSeed);
+    const [group, nonce] = await this.findPromoGroupAddress(seed);
 
-    const groupData: Group = {
+    const groupData: PromoGroup = {
       owner: this.payer.publicKey,
       seed,
       nonce,
-      membersCapacity,
       members,
     }
 
     await this.program.methods
-      .createGroup(
+      .createPromoGroup(
         groupData,
         new BN(lamports),
         memo
       )
       .accounts({
         group,
+        seed,
         memoProgram: this.MEMO_PROGRAM_ID,
       })
       .rpc();
-
+    console.log("jingus", group)
     return [group, nonce]
   }
 
@@ -152,8 +150,8 @@ export class TokenMetadataProgram {
     const mint = Keypair.generate();
 
     const [metadata] = await this.findMetadataAddress(mint.publicKey);
-    const [group] = await this.findGroupAddress(groupSeed);
-    console.log("group", group)
+    const [group] = await this.findPromoGroupAddress(groupSeed);
+
 
     const promoData: Promo = {
       owner: group,
@@ -193,7 +191,7 @@ export class TokenMetadataProgram {
   // no promo owner as signer for demo
   async mintPromoToken(mint: PublicKey, groupMember: Keypair, groupSeed: PublicKey, memo: string | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
-    const [group] = await this.findGroupAddress(groupSeed);
+    const [group] = await this.findPromoGroupAddress(groupSeed);
 
     await this.program.methods
       .mintPromoToken(memo)
@@ -220,7 +218,7 @@ export class TokenMetadataProgram {
    */
   async delegatePromoToken(mint: PublicKey, groupMember: Keypair, groupSeed: PublicKey, memo: string | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
-    const [group] = await this.findGroupAddress(groupSeed);
+    const [group] = await this.findPromoGroupAddress(groupSeed);
 
     await this.program.methods.delegatePromoToken(memo).accounts({
       payer: groupMember.publicKey,
@@ -252,7 +250,7 @@ export class TokenMetadataProgram {
     memo: string | null
   ): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, tokenOwner);
-    const [group] = await this.findGroupAddress(groupSeed);
+    const [group] = await this.findPromoGroupAddress(groupSeed);
 
     await this.program.methods
       .burnDelegatedPromoToken(memo)
@@ -372,7 +370,7 @@ export class TokenMetadataProgram {
     );
   }
 
-  async findGroupAddress(groupSeed: PublicKey): Promise<[PublicKey, number]> {
+  async findPromoGroupAddress(groupSeed: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [groupSeed.toBuffer()],
       this.PUBKEY,

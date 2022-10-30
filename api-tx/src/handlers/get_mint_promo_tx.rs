@@ -8,8 +8,11 @@ use solana_sdk::{signer::Signer, transaction::Transaction};
 use std::{str::FromStr, sync::Arc};
 
 use crate::{
-    error::AppError, handlers::Params, utils::solana::create_mint_promo_instruction, State,
-    PROMO_GROUP_QUERY,
+    error::AppError,
+    handlers::Params,
+    utils::data::get_group,
+    utils::{data::PROMO_GROUP_QUERY, solana::create_mint_promo_instruction},
+    State,
 };
 
 pub async fn handler(
@@ -27,13 +30,8 @@ pub async fn handler(
     let payer = state.promo_owner.pubkey();
     let mint = Pubkey::from_str(&mint_string)?;
 
-    // TODO: make request to data api to confirm platform address is included in
-    // members of group.
-    let group_seed = Pubkey::new_unique();
-    let instruction = create_mint_promo_instruction(payer, group_seed, token_owner, mint, memo)?;
-
-    let query = serde_json::json!({ "mint": mint_string, "query": PROMO_GROUP_QUERY, "variables": {"mint": mint_string}});
-
+    let query =
+        serde_json::json!({ "query": PROMO_GROUP_QUERY, "variables": {"mint": mint_string}});
     let result: serde_json::Value = state
         .solana
         .client
@@ -44,7 +42,9 @@ pub async fn handler(
         .json()
         .await?;
 
-    tracing::debug!("{:?}", result.to_string());
+    let group = get_group(&payer, &result)?;
+
+    let instruction = create_mint_promo_instruction(payer, group, token_owner, mint, memo)?;
 
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;

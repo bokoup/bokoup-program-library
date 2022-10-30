@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, Group } from '../src';
+import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, PromoGroup } from '../src';
 import { PublicKey, Keypair, Transaction, Connection } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
@@ -64,7 +64,7 @@ describe('promo', () => {
     options
   ));
 
-  let groupAccount: Group;
+  let groupAccount: PromoGroup;
 
 
 
@@ -107,15 +107,14 @@ describe('promo', () => {
   it('creates group', async () => {
 
     const members = [promoOwner.publicKey, groupMember1.publicKey]
-    const membersCount = 10;
     const lamports = 20_000_000;
     const memo = "Created a new group for bokoup store group";
 
-    [group] = await tokenMetadataProgramPromoOwner.createGroup(groupSeed, membersCount, members, groupSeed, lamports, memo);
+    [group] = await tokenMetadataProgramPromoOwner.createPromoGroup(groupSeed, members, lamports, memo);
 
-    groupAccount = (await tokenMetadataProgram.program.account.group.fetch(
+    groupAccount = (await tokenMetadataProgram.program.account.promoGroup.fetch(
       group,
-    )) as Group;
+    )) as PromoGroup;
     expect(groupAccount.owner.toString()).to.equal(
       promoOwner.publicKey.toString(),
       'Group incorrect.',
@@ -131,7 +130,7 @@ describe('promo', () => {
       );
 
     expect(groupAccountInfo?.lamports).to.equal(
-      23396480,
+      23626160,
       'Group lamports incorrect.',
     );
 

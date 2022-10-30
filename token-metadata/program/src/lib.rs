@@ -36,7 +36,7 @@ pub mod bpl_token_metadata {
 
     /// Creates Group account used to grant transaction execution permissions to
     /// group members.
-    pub fn create_group(
+    pub fn create_promo_group(
         ctx: Context<CreatePromoGroup>,
         data: PromoGroup,
         lamports: u64,
@@ -144,16 +144,18 @@ pub struct CreatePromoGroup<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     /// CHECK: pubkey checked via constraint
+    pub seed: UncheckedAccount<'info>,
     #[account(
         init_if_needed,
-        constraint = group.members.len() <= MEMBERS_CAPACITY as usize,
+        constraint = data.members.len() <= MEMBERS_CAPACITY as usize,
         constraint = data.owner == payer.key(),
         constraint = data.members.contains(&data.owner),
-        seeds = [data.seed.as_ref()], bump,
+        constraint = data.seed == seed.key(),
+        seeds = [seed.key().as_ref()], bump,
         payer = payer,
-        space = data.len()
+        space = PromoGroup::LEN
     )]
-    pub group: Account<'info, PromoGroup>,
+    pub promo_group: Account<'info, PromoGroup>,
     pub memo_program: Program<'info, SplMemo>,
     pub system_program: Program<'info, System>,
 }

@@ -8,6 +8,7 @@ SET check_function_bodies = false;
 DROP TABLE IF EXISTS public.group CASCADE;
 DROP TABLE IF EXISTS public.promo_group CASCADE;
 DROP TABLE IF EXISTS public.promo CASCADE;
+DROP TABLE IF EXISTS public.create_promo_group CASCADE;
 DROP TABLE IF EXISTS public.create_promo CASCADE;
 DROP TABLE IF EXISTS public.mint_promo_token CASCADE;
 DROP TABLE IF EXISTS public.delegate_promo_token CASCADE;

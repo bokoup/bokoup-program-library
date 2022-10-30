@@ -39,11 +39,8 @@ pub struct PromoGroup {
     pub members: Vec<Pubkey>,
 }
 
-// Initial capacity for five members
 impl PromoGroup {
-    pub fn len(&self) -> usize {
-        8 + 32 + 32 + 1 + 32 * MEMBERS_CAPACITY as usize
-    }
+    pub const LEN: usize = 8 + 32 + 32 + 1 + 32 * MEMBERS_CAPACITY as usize;
 }
 
 //==============================

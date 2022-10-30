@@ -32,17 +32,6 @@ pub mod utils;
 pub const CLOVER_URL: &str = "https://sandbox.dev.clover.com/v3/apps/";
 pub const CLOVER_APP_ID: &str = "MAC8DQKWCCB1R";
 pub const PROMO_OWNER_KEYPAIR_PATH: &str = "/keys/promo_owner-keypair.json";
-pub const PROMO_GROUP_QUERY: &str = r#" query MintQuery($mint: String) {
-        mint(where: {id: {_eq: $mint}}) {
-            promoObject {
-                groupObject {
-                id
-                seed
-                }
-            }
-        }
-    }
-    "#;
 
 pub struct State {
     pub promo_owner: Keypair,
@@ -157,6 +146,7 @@ async fn handle_error(error: BoxError) -> impl IntoResponse {
     )
 }
 
+// TODO: Move to integration tests - makes live calls to data and transaction apis.
 #[cfg(test)]
 pub mod test {
     use super::*;
@@ -165,14 +155,51 @@ pub mod test {
         body::Body,
         http::{Method, Request, StatusCode},
     };
+    use serde_json::Value;
     use solana_sdk::{signature::Signer, transaction::Transaction};
     use std::net::{SocketAddr, TcpListener};
     use tokio::fs;
     use tower::ServiceExt;
     use tracing_subscriber::{fmt, prelude::*, EnvFilter};
-    use utils::solana::*;
+    use utils::{data::*, solana::*};
 
     const MESSAGE: &str = "This is a really long message that tells you to do something.";
+
+    async fn fetch_mint(url: &String) -> Value {
+        let client = reqwest::Client::new();
+        let result: serde_json::Value = client
+            .post(url)
+            .json(&serde_json::json!({ "query": MINT_QUERY }))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        tracing::debug!(result = result.to_string());
+
+        let mint = result
+            .as_object()
+            .unwrap()
+            .get("data")
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("mint")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .get(0)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("id")
+            .unwrap()
+            .as_str()
+            .unwrap();
+        serde_json::json!({ "mint": mint })
+    }
 
     #[tokio::test]
     async fn test_app_id() {
@@ -220,8 +247,33 @@ pub mod test {
         let state = State::new(Cluster::Devnet);
         let app = create_app(Cluster::Devnet);
         let token_owner = Pubkey::new_unique();
-        let mint = Pubkey::new_unique();
-        let group_seed = Pubkey::new_unique();
+
+        let result = fetch_mint(&state.data_url).await;
+
+        let mint_str = result
+            .as_object()
+            .unwrap()
+            .get("mint")
+            .unwrap()
+            .as_str()
+            .unwrap();
+
+        let mint = Pubkey::from_str(mint_str).unwrap();
+
+        let query = serde_json::json!({ "query": PROMO_GROUP_QUERY, "variables": {"mint": mint.to_string()}});
+        let result: serde_json::Value = state
+            .solana
+            .client
+            .post(&state.data_url)
+            .json(&query)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        let group = get_group(&state.promo_owner.pubkey(), &result).unwrap();
 
         let data = get_mint_promo_tx::Data {
             account: token_owner.to_string(),
@@ -260,7 +312,7 @@ pub mod test {
 
         let instruction = create_mint_promo_instruction(
             state.promo_owner.pubkey(),
-            group_seed,
+            group,
             token_owner,
             mint,
             Some(memo.to_string()),
