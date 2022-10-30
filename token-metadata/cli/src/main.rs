@@ -47,6 +47,8 @@ enum Commands {
         #[clap(long, default_value_t = 10_000_000, value_parser)]
         burn_promo_token_lamports: u64,
     },
+    #[clap(about = "Tesing requesting data from graphql api")]
+    TestGql,
 }
 
 #[tokio::main]
@@ -186,6 +188,32 @@ async fn main() -> anyhow::Result<()> {
                 Ok(value) => println!("{}", value),
                 Err(e) => println!("{}", e),
             }
+            Ok(())
+        }
+        Commands::TestGql => {
+            let client = reqwest::Client::new();
+            let query = r#"
+            query MintQuery($mint: String) {
+                mint(where: {id: {_eq: $mint}}) {
+                  promoObject {
+                    groupObject {
+                      id
+                      seed
+                    }
+                  }
+                }
+              }
+            "#;
+
+            let result: serde_json::Value = client
+                .post("https://shining-sailfish-15.hasura.app/v1/graphql/")
+                .json(&serde_json::json!({ "query": query, "operationName": "MintQuery", "variables": {"mint": "4uQeVj5tqViQh7yWWGStvkEG1Zmhx6uasJtWCJziofM"}}))
+                .send()
+                .await?
+                .json()
+                .await?;
+
+            println!("{}", result);
             Ok(())
         }
     }

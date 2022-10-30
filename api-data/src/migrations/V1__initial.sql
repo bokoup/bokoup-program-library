@@ -5,6 +5,20 @@ SET check_function_bodies = false;
 -- bpl_token_metadata
 -- =============================
 
+CREATE TABLE public.promo_group (
+    id text NOT NULL,
+    owner text NOT NULL,
+    seed text NOT NULL,
+    nonce int NOT NULL,
+    members jsonb NOT NULL,
+    slot bigint NOT NULL,
+    write_version bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE ONLY public.promo_group
+    ADD CONSTRAINT promo_group_pkey PRIMARY KEY (id);
+
 CREATE TABLE public.promo (
     id text NOT NULL,
     owner text NOT NULL,

@@ -13,6 +13,7 @@ bundlr-sdk = { git = "https://github.com/CalebEverett/bundlr-rust-sdk", branch =
 clap = { version="3.2.22", features=["derive"] }
 ed25519-dalek = "1.0.1"
 dotenv = "0.15"
+reqwest = { version = "0.11.10",  features = ["json", "multipart"] }
 serde_json = "1.0.68"
 tokio = { version = "1.18.2", features = ["full"] }
 tracing = "0.1"

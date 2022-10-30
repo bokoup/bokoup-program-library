@@ -1,4 +1,5 @@
 pub mod error;
+/// Processors for each program instruction.
 pub mod processor;
 pub mod state;
 pub mod utils;
@@ -10,8 +11,8 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 use borsh::BorshDeserialize;
-use state::{AdminSettings, DataV2, Promo};
-use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, PROMO_PREFIX};
+use state::{AdminSettings, DataV2, Promo, PromoGroup};
+use utils::{ADMIN_PREFIX, AUTHORITY_PREFIX, MEMBERS_CAPACITY, PROMO_PREFIX};
 
 declare_id!("CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi");
 
@@ -20,10 +21,12 @@ declare_id!("CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi");
 // solana_server_setup.sh -> config.json
 // TokenMetadataProgram.ts
 
+/// Main module containing program instructions.
 #[program]
 pub mod bpl_token_metadata {
     use super::*;
 
+    /// Creates AdminSettings account.
     pub fn create_admin_settings(
         ctx: Context<CreateAdminSettings>,
         data: AdminSettings,
@@ -31,6 +34,18 @@ pub mod bpl_token_metadata {
         ctx.accounts.process(data)
     }
 
+    /// Creates Group account used to grant transaction execution permissions to
+    /// group members.
+    pub fn create_group(
+        ctx: Context<CreatePromoGroup>,
+        data: PromoGroup,
+        lamports: u64,
+        memo: Option<String>,
+    ) -> Result<()> {
+        ctx.accounts.process(data, lamports, memo)
+    }
+
+    /// Creates Promo account and related mint and metadata accounts.
     pub fn create_promo(
         ctx: Context<CreatePromo>,
         promo_data: Promo,
@@ -39,10 +54,22 @@ pub mod bpl_token_metadata {
         memo: Option<String>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
+
         ctx.accounts
             .process(promo_data, metadata_data, is_mutable, authority_seeds, memo)
     }
 
+    /// Example of executing lamprts transfer from program derived account.
+    pub fn transfer_cpi(ctx: Context<TransferCpi>, lamports: u64) -> Result<()> {
+        let seed = ctx.accounts.group.seed.clone();
+        let group_seeds = [seed.as_ref(), &[ctx.accounts.group.nonce]];
+
+        msg!("group_seeds: {:?}", group_seeds);
+
+        ctx.accounts.process(lamports, group_seeds)
+    }
+
+    /// Mints a promo token.
     pub fn mint_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MintPromoToken<'info>>,
         memo: Option<String>,
@@ -51,6 +78,7 @@ pub mod bpl_token_metadata {
         ctx.accounts.process(authority_seeds, memo)
     }
 
+    /// Delegates a promo token.
     pub fn delegate_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, DelegatePromoToken<'info>>,
         memo: Option<String>,
@@ -58,14 +86,16 @@ pub mod bpl_token_metadata {
         ctx.accounts.process(memo)
     }
 
+    /// Burns a delegated promo token.
     pub fn burn_delegated_promo_token<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, BurnDelegatedPromoToken<'info>>,
         memo: Option<String>,
     ) -> Result<()> {
-        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
-        ctx.accounts.process(authority_seeds, memo)
+        ctx.accounts.process(memo)
     }
 
+    /// Creates a non-fungible token. Will be used in the future with additional promo token form
+    /// factors and to facilitate grouping promo tokens in collections.
     pub fn create_non_fungible(
         ctx: Context<CreateNonFungible>,
         data: DataV2,
@@ -78,7 +108,14 @@ pub mod bpl_token_metadata {
     }
 }
 
-// TODO: add program data check per anchor example
+/// Accounts related to creating [AdminSettings].
+///
+/// Admin settings sets the platform account to which protocol fees are remitted and sets the
+/// platform fee levels for creating and burning a promo token. There are no platform fees
+/// for minting or delegating tokens. Can only be created by the program authority.
+///
+/// Program derived address allows only one account to exist per program.
+// TODO: uncomment prorgram data check when deploying to devnet
 #[derive(Accounts)]
 pub struct CreateAdminSettings<'info> {
     #[account(mut)]
@@ -92,26 +129,83 @@ pub struct CreateAdminSettings<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// Here the payer would be the merchant.
+/// Accounts related to creating a [Group].
+///
+/// [Group] account owns [Promo] account. [Group] has an owner and members. Members can sign on behalf of the
+/// group to mint tokens. Can be set with a members_capacity value of up to 255. Checks to make sure that
+/// members_capacity is at least as big as the initial number of members. Also requires that the owner of the group
+/// be the payer of the transaction and that the owner be include in the members.
+///
+/// [Group] has a program derived address so that permissions to it can be managed by the program. The seed is based
+/// on a public key passed in to the program.
+#[derive(Accounts)]
+#[instruction(data: PromoGroup)]
+pub struct CreatePromoGroup<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    /// CHECK: pubkey checked via constraint
+    #[account(
+        init_if_needed,
+        constraint = group.members.len() <= MEMBERS_CAPACITY as usize,
+        constraint = data.owner == payer.key(),
+        constraint = data.members.contains(&data.owner),
+        seeds = [data.seed.as_ref()], bump,
+        payer = payer,
+        space = data.len()
+    )]
+    pub group: Account<'info, PromoGroup>,
+    pub memo_program: Program<'info, SplMemo>,
+    pub system_program: Program<'info, System>,
+}
+
+/// Accounts related to creating a [Promo].
+///
+/// Currently set up to have the signer pay network fees. Only the group owner is able to create
+/// create promos. Both mint and metadata authorities are retained by the program in order to facilitate
+/// customers transacting without fees to the greatest extent possible and to centralize permissions.
+///
+/// Program derived address allows only one promo account to exist per mint.
+///
+/// Checks to make sure that promo owner property is equal to the group account address. Also checks
+/// to make sure the platform address is the one contained in the admin setings account.
+///
+/// It may be desirable to have members of merchants' groups create promos in the future.
+/// To avoid having multiple members each having wallets with crypto balances in them determine
+/// whether a pda can pay network fees so the group account can pay them when authorized by
+/// members' signatures.
+///
+/// The fee specified in the `create_promo_lamports` property of the [AdminSettings] account
+/// is remitted from the [Group] specified in the `owner` property of the [Promo] is transferred
+/// from the [Group] lamports to the account specified in the `platform` property of the [AdminSettings]
+/// account.
 #[derive(Accounts, Clone)]
 #[instruction(promo_data: Promo, metadata_data: DataV2)]
 pub struct CreatePromo<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut,
+        constraint = payer.key() == group.owner,
+        constraint = group.key() == promo_data.owner,
+    )]
+    pub group: Account<'info, PromoGroup>,
     #[account(init, payer = payer, mint::decimals = 0, mint::authority = authority, mint::freeze_authority = authority)]
     pub mint: Account<'info, Mint>,
     /// CHECK: Created via cpi
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
+    /// Metadata authority as pda to enable program to authorize edits
     /// CHECK: pubkey checked via seeds
     #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
     pub authority: UncheckedAccount<'info>,
-    #[account(init, payer = payer, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump,
-        constraint = promo_data.owner == payer.key(),
+    #[account(init, payer = payer,
+        seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump,
+        constraint = promo_data.owner == group.key(),
         space = Promo::LEN)]
     pub promo: Account<'info, Promo>,
     /// CHECK: pubkey checked via constraint
-    #[account(mut, constraint = platform.key() == admin_settings.platform)]
+    #[account(mut,
+        constraint = platform.key() == admin_settings.platform
+    )]
     pub platform: UncheckedAccount<'info>,
     #[account(seeds = [ADMIN_PREFIX.as_bytes()], bump)]
     pub admin_settings: Box<Account<'info, AdminSettings>>,
@@ -122,12 +216,43 @@ pub struct CreatePromo<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// Here we want to have promo_owner be the payer so that customers don't
-// have to pay anything to receive a token.
+/// Example of executing lamprts transfer from program derived account.
+#[derive(Accounts, Clone)]
+#[instruction(lamports: u64)]
+pub struct TransferCpi<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(mut)]
+    pub group: Account<'info, PromoGroup>,
+    /// CHECK: checked in contraints
+    #[account(mut, constraint = platform.key() == admin_settings.platform)]
+    pub platform: UncheckedAccount<'info>,
+    #[account(seeds = [ADMIN_PREFIX.as_bytes()], bump)]
+    pub admin_settings: Box<Account<'info, AdminSettings>>,
+    pub system_program: Program<'info, System>,
+}
+
+/// Accounts related to minting a promo token.
+///
+/// Requires a signature from a member of the group specified in the owner field
+/// of the promo as well as from the recipient (as a matter of responsible token issuance,
+/// bokoup always gets a recipient's consent before minting them any tokens).
+///
+/// Creates a token account for the recipient if one does not already exist. Authority over the
+/// token account is retained with the token owner. (All tokens are currently freely transferrable
+/// by token owners. Future versions may retain authority with the program to facilitate execution
+/// to enforce transfer restrictions).
+///
+/// No platform fees result from minting a token.
 #[derive(Accounts, Clone)]
 pub struct MintPromoToken<'info> {
-    #[account(mut, constraint = payer.key() == promo.owner)]
+    #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut,
+        constraint = group.members.contains(&payer.key()),
+        constraint = group.key() == promo.owner,
+    )]
+    pub group: Account<'info, PromoGroup>,
     #[account(mut)]
     pub token_owner: Signer<'info>,
     #[account(mut)]
@@ -137,8 +262,6 @@ pub struct MintPromoToken<'info> {
     pub authority: UncheckedAccount<'info>,
     #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
-    // #[account(mut, seeds = [ADMIN_PREFIX.as_bytes()], bump)]
-    // pub admin_settings: Account<'info, AdminSettings>,
     #[account(init_if_needed, payer = payer, associated_token::mint = mint, associated_token::authority = token_owner)]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
@@ -148,29 +271,60 @@ pub struct MintPromoToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// Payer is also promo owner here.
+/// Accounts related to the delegation of a promo token.
+///
+/// Delegates a token to the payer.
+///
+/// Checks to make sure signer is a member of group specified in owner property of
+/// promo. (Could include a designated platform address if merchants wanted customers
+/// to be able to delegate their tokens without them having to sign).
+///
+/// Also requires sigture from token owner as the authrity of the token account.
+///
+/// No platform fees result from delegating a token.
 #[derive(Accounts, Clone)]
 pub struct DelegatePromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut,
+        constraint = group.members.contains(&payer.key()),
+        constraint = group.key() == promo.owner,
+    )]
+    pub group: Account<'info, PromoGroup>,
     #[account(mut)]
     pub token_owner: Signer<'info>,
-    /// CHECK: pubkey checked via seeds
-    #[account(seeds = [AUTHORITY_PREFIX.as_bytes()], bump)]
-    pub authority: UncheckedAccount<'info>,
-    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), token_account.mint.key().as_ref()], bump)]
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+    #[account(mut, seeds = [PROMO_PREFIX.as_bytes(), mint.key().as_ref()], bump)]
     pub promo: Account<'info, Promo>,
-    #[account(mut, constraint = token_account.owner == token_owner.key())]
+    #[account(mut,
+        constraint = token_owner.key() == token_account.owner,
+        constraint = mint.key() == token_account.mint
+    )]
     pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub memo_program: Program<'info, SplMemo>,
     pub system_program: Program<'info, System>,
 }
 
+/// Accounts related to the burning of a delegated promo token.
+///
+/// Checks to make sure signer is a member of group specified in owner property of
+/// promo. Only requires
+///
+/// The fee specified in the `burn_promo_token_lamports` property of the [AdminSettings] account
+/// is transferred from the [Group] specified in the `owner` property of the [Promo] from the
+/// lamports of the [Group] account to the account specified in the `platform` property of the [AdminSettings]
+/// account.
 #[derive(Accounts, Clone)]
 pub struct BurnDelegatedPromoToken<'info> {
-    #[account(mut, constraint = payer.key() == promo.owner)]
+    #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut,
+        constraint = group.members.contains(&payer.key()),
+        constraint = group.key() == promo.owner,
+    )]
+    pub group: Account<'info, PromoGroup>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK: pubkey checked via spl token program instruction
@@ -185,7 +339,7 @@ pub struct BurnDelegatedPromoToken<'info> {
     pub admin_settings: Account<'info, AdminSettings>,
     #[account(mut,
         constraint = token_account.mint == mint.key(),
-        constraint = token_account.delegate.unwrap() == authority.key(),
+        constraint = token_account.delegate.unwrap() == payer.key(),
         constraint = token_account.delegated_amount > 0,
     )]
     pub token_account: Account<'info, TokenAccount>,
@@ -196,6 +350,7 @@ pub struct BurnDelegatedPromoToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Account related to creation of non-fungibles - not yet implemented.
 #[derive(Accounts, Clone)]
 pub struct CreateNonFungible<'info> {
     #[account(mut)]
@@ -220,6 +375,7 @@ pub struct CreateNonFungible<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Accounts related to creation of token [Metadata].
 #[derive(Accounts, Clone)]
 pub struct CreateMetaData<'info> {
     #[account(mut)]
@@ -276,7 +432,6 @@ pub struct TransferSol<'info> {
     /// CHECK: unchecked
     #[account(mut)]
     pub to: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
 }
 
 #[derive(Clone)]
@@ -314,16 +469,6 @@ impl anchor_lang::AccountDeserialize for Metadata {
         .map_err(Into::into)
     }
 }
-
-// impl mpl_token_metadata::state::TokenMetadataAccount for Metadata {
-//     fn key() -> mpl_token_metadata::state::Key {
-//         mpl_token_metadata::state::Key::MetadataV1
-//     }
-
-//     fn size() -> usize {
-//         mpl_token_metadata::state::MAX_METADATA_LEN
-//     }
-// }
 
 impl anchor_lang::AccountSerialize for Metadata {}
 

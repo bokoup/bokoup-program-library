@@ -747,6 +747,10 @@ dependencies = [
  "mpl-token-metadata",
  "solana-sdk",
  "spl-memo",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -762,6 +766,7 @@ dependencies = [
  "clap 3.2.22",
  "dotenv",
  "ed25519-dalek",
+ "reqwest",
  "serde_json",
  "tokio",
  "tracing",

@@ -4,6 +4,8 @@ use mpl_token_metadata::state::{
     UseMethod as UseMethodMpl, Uses as UsesMpl,
 };
 
+use crate::utils::MEMBERS_CAPACITY;
+
 //==============================
 // AdminSettings
 //==============================
@@ -22,6 +24,26 @@ impl AdminSettings {
     + 32    // platform,
     + 32    // create_promo_lamports,
     + 32; // burn_promo_token_lamports
+}
+
+//==============================
+// Group
+//==============================
+
+#[account]
+#[derive(Default, Debug)]
+pub struct PromoGroup {
+    pub owner: Pubkey,
+    pub seed: Pubkey,
+    pub nonce: u8,
+    pub members: Vec<Pubkey>,
+}
+
+// Initial capacity for five members
+impl PromoGroup {
+    pub fn len(&self) -> usize {
+        8 + 32 + 32 + 1 + 32 * MEMBERS_CAPACITY as usize
+    }
 }
 
 //==============================

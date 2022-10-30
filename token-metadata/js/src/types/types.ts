@@ -8,6 +8,7 @@ import {
 
   Mint,
 } from '@solana/spl-token';
+import { UTF8 } from '@solana/buffer-layout';
 
 export type Network =
   | 'http://127.0.0.1:8899'
@@ -19,6 +20,15 @@ export type AdminSettings = {
   platform: PublicKey;
   createPromoLamports: BN;
   burnPromoTokenLamports: BN;
+};
+
+export type Group = {
+  owner: PublicKey;
+  seed: PublicKey,
+  nonce: number;
+  membersCapacity: number,
+  members: Array<PublicKey>;
+
 };
 
 export type UI<T> = T & {

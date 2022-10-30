@@ -19,6 +19,7 @@ bpl_token_metadata = "CjSoZrc2DBZTv1UdoMx8fTcCpqEMXCyfm2EuTwy8yiGi"
 
 [scripts]
 test = "yarn run ts-mocha -p token-metadata/js/tsconfig.json -t 1000000 token-metadata/js/test/promo.spec.ts"
+# test = "cargo test -p bpl-token-metadata --test integration_test"
 
 [test]
 startup_wait = 20000

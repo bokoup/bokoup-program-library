@@ -8,7 +8,7 @@ impl<'info> DelegatePromoToken<'info> {
 
         let delegate_ctx = anchor_spl::token::Approve {
             to: self.token_account.to_account_info(),
-            delegate: self.authority.to_account_info(),
+            delegate: self.payer.to_account_info(),
             authority: self.token_owner.to_account_info(),
         };
 

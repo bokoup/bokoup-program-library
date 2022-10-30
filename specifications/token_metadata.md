@@ -1,4 +1,4 @@
-# Specifications
+# Token Metadata
 ## Version: 0.0.1
 
 ## Background
@@ -11,7 +11,7 @@ The initial on chain bokoup program utilizes semi-fungible tokens to represent p
 
 Merchants, of course are free to determine their own data standards, but they would need to determine their own business logic for relating those standards to the relevant apis in their sales platforms in order to have a fully functioning system. This is an attempt to define a set of standards along with the business logic that would allow the offers to be applied in sales systems.
 
-As a general matter we try to conform the specifications to those of the Metaplex standards so that tokens can be viewed in any wallet that conforms to those standards. As such, we use the array of attributes in the attributes field to define our standards.
+As a general matter we conform the specifications to the Metaplex standards so that tokens can be viewed in any wallet that conforms to those standards. As such, we use the array of attributes in the attributes field to define our standards.
 
 Merchants are also free to add additional attributes, for communicating with potential customers or to represent references for internal reporting, for example.
 

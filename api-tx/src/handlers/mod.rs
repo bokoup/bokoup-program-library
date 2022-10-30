@@ -1,8 +1,8 @@
 use serde::Deserialize;
 
+pub mod burn_delegated_promo;
 pub mod create_promo;
 pub mod get_app_id;
-pub mod get_burn_delegated_promo_tx;
 pub mod get_delegate_promo_tx;
 pub mod get_mint_promo_tx;
 

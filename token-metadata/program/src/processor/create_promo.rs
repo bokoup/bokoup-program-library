@@ -1,7 +1,7 @@
 use crate::{
     state::{DataV2, Promo},
-    utils::{create_memo, create_metadata_accounts_v2, transfer_sol},
-    CreateMetaData, CreatePromo, TransferSol,
+    utils::{create_memo, create_metadata_accounts_v2},
+    CreateMetaData, CreatePromo,
 };
 use anchor_lang::prelude::*;
 
@@ -16,19 +16,21 @@ impl<'info> CreatePromo<'info> {
     ) -> Result<()> {
         msg!("Create promo");
 
-        // Payer is the promo owner.
+        // Error if not enough lamports
+        if self.group.to_account_info().lamports.borrow().clone()
+            < self.admin_settings.create_promo_lamports
+        {
+            return Err(ProgramError::InsufficientFunds.into());
+        }
+
         if self.admin_settings.create_promo_lamports > 0 {
-            transfer_sol(
-                CpiContext::new(
-                    self.system_program.to_account_info(),
-                    TransferSol {
-                        payer: self.payer.to_account_info(),
-                        to: self.platform.to_account_info(),
-                        system_program: self.system_program.clone(),
-                    },
-                ),
-                self.admin_settings.create_promo_lamports,
-            )?;
+            let group = self.group.to_account_info();
+            let platform = self.platform.to_account_info();
+            let amount = self.admin_settings.create_promo_lamports;
+
+            **group.try_borrow_mut_lamports()? = group.lamports().checked_sub(amount).unwrap();
+            **platform.try_borrow_mut_lamports()? =
+                platform.lamports().checked_add(amount).unwrap();
         }
 
         create_metadata_accounts_v2(

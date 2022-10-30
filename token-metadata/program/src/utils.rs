@@ -8,6 +8,7 @@ use mpl_token_metadata::{pda::find_metadata_account, state::DataV2};
 pub const ADMIN_PREFIX: &str = "admin";
 pub const AUTHORITY_PREFIX: &str = "authority";
 pub const PROMO_PREFIX: &str = "promo";
+pub const MEMBERS_CAPACITY: u8 = 10;
 
 pub fn transfer_sol<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, TransferSol<'info>>,
@@ -23,7 +24,6 @@ pub fn transfer_sol<'a, 'b, 'c, 'info>(
         &[
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.to.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
         ],
         ctx.signer_seeds,
     )
@@ -80,7 +80,7 @@ pub fn create_master_edition_v3<'a, 'b, 'c, 'info>(
         ctx.accounts.authority.key.clone(),
         ctx.accounts.authority.key.clone(),
         ctx.accounts.metadata_account.key(),
-        ctx.accounts.payer.key.clone(),
+        ctx.accounts.payer.key().clone(),
         max_supply,
     );
     anchor_lang::solana_program::program::invoke_signed(
@@ -123,6 +123,10 @@ pub fn find_authority_address() -> (Pubkey, u8) {
 
 pub fn find_promo_address(mint: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[PROMO_PREFIX.as_bytes(), mint.as_ref()], &crate::id())
+}
+
+pub fn find_group_address(seed: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[seed.as_ref()], &crate::id())
 }
 
 pub fn find_metadata_address(mint: &Pubkey) -> (Pubkey, u8) {

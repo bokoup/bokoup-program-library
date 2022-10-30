@@ -62,7 +62,10 @@ pub async fn apply_migrations(client: &mut Client) -> Result<(), Error> {
 mod tests {
     use super::*;
     use anchor_spl::associated_token::get_associated_token_address;
-    use bpl_token_metadata::state::Promo;
+    use bpl_token_metadata::{
+        state::{Promo, PromoGroup},
+        utils::find_group_address,
+    };
     use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
     use mpl_auction_house::{
         pda::{
@@ -95,6 +98,33 @@ mod tests {
     // =============================
     // Accounts
     // =============================
+
+    async fn it_upserts_promo_group(
+        client: &Client,
+        key: &[u8],
+        account: &PromoGroup,
+        slot: u64,
+        write_version: u64,
+    ) {
+        queries::bpl_token_metadata::group::upsert(client, key, account, slot, write_version).await;
+        let row = client
+            .query_one(
+                "SELECT * FROM promo_group WHERE id = $1",
+                &[&bs58::encode(key).into_string()],
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            row.get::<&str, i32>("nonce"),
+            account.nonce as i32,
+            "it_upserts_group: nonce failed"
+        );
+        assert_eq!(
+            row.get::<&str, String>("owner"),
+            account.owner.to_string(),
+            "it_upserts_group: owner failed"
+        );
+    }
 
     async fn it_upserts_mint(
         client: &Client,
@@ -378,7 +408,7 @@ mod tests {
             recycling_method: RecyclingMethod::Fast,
         };
         let mgr = Manager::from_config(pg_config, NoTls, mgr_config);
-        let pg_pool = Pool::builder(mgr).max_size(10).build().unwrap();
+        let pg_pool = Pool::builder(mgr).max_size(20).build().unwrap();
 
         let mint_pubkey = Pubkey::new_unique();
         let mint_authority = Pubkey::new_unique();
@@ -402,6 +432,21 @@ mod tests {
             it_upserts_transaction(&client, &Signature::default(), &accounts, data, 42, table)
                 .await;
         }
+
+        // upsert group
+        let owner = Pubkey::new_unique();
+        let member = Pubkey::new_unique();
+        let seed = Pubkey::new_unique();
+        let (group_pubkey, nonce) = find_group_address(&seed);
+
+        let group = PromoGroup {
+            owner,
+            seed,
+            nonce,
+            members: vec![owner, member],
+        };
+
+        it_upserts_promo_group(&client, group_pubkey.as_ref(), &group, 42, 1).await;
 
         // update a mint, null out an optional value
         mint.supply = 2;
@@ -445,7 +490,7 @@ mod tests {
             data: Data {
                 name: "Name".to_string(),
                 symbol: "SYMBOL".to_string(),
-                uri: "https://uri.tbd".to_string(),
+                uri: "https://arweave.net/u27CJpMzXZnmrTwqXzHjXQnECxP0_iMzSjE-WMAec24".to_string(),
                 seller_fee_basis_points: 420,
                 creators: Some(creators),
             },
@@ -463,6 +508,7 @@ mod tests {
                 total: 4,
             }),
         };
+
         it_upserts_metadata(&client, metadata_pubkey.as_ref(), &metadata, 42, 1).await;
 
         // update a metadata account, including change in number of creators

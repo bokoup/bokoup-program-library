@@ -21,3 +21,18 @@ array_relationships:
         remote_table:
           name: token_account
           schema: public
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - slot
+        - supply
+        - write_version
+        - is_initialized
+        - decimals
+        - freeze_authority
+        - id
+        - mint_authority
+        - created_at
+        - modified_at
+      filter: {}

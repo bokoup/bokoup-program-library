@@ -3,7 +3,7 @@ use crate::{error::ProgramError, BurnDelegatedPromoToken, TransferSol};
 use anchor_lang::prelude::*;
 
 impl<'info> BurnDelegatedPromoToken<'info> {
-    pub fn process(&mut self, authority_seeds: [&[u8]; 2], memo: Option<String>) -> Result<()> {
+    pub fn process(&mut self, memo: Option<String>) -> Result<()> {
         msg!("Burn delegated promo token");
 
         // Check to see if burn_count is still below max_burn.
@@ -20,7 +20,6 @@ impl<'info> BurnDelegatedPromoToken<'info> {
                     TransferSol {
                         payer: self.payer.to_account_info(),
                         to: self.platform.to_account_info(),
-                        system_program: self.system_program.clone(),
                     },
                 ),
                 self.admin_settings.burn_promo_token_lamports,
@@ -30,15 +29,11 @@ impl<'info> BurnDelegatedPromoToken<'info> {
         let burn_ctx = anchor_spl::token::Burn {
             mint: self.mint.to_account_info(),
             from: self.token_account.to_account_info(),
-            authority: self.authority.to_account_info(),
+            authority: self.payer.to_account_info(),
         };
 
         anchor_spl::token::burn(
-            CpiContext::new_with_signer(
-                self.token_program.to_account_info(),
-                burn_ctx,
-                &[&authority_seeds],
-            ),
+            CpiContext::new(self.token_program.to_account_info(), burn_ctx),
             1,
         )?;
 

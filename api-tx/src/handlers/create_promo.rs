@@ -6,10 +6,11 @@ use crate::{
     },
     State,
 };
+use anchor_lang::prelude::Pubkey;
 use axum::{extract::Multipart, Extension, Json};
 use serde_json::{Map, Value};
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 pub async fn handler(
     mut multipart: Multipart,
@@ -53,6 +54,23 @@ pub async fn handler(
         ))
     }?;
 
+    let group_seed_string = if let Some(field) = multipart.next_field().await.unwrap() {
+        if field.name().expect("name field should exist") == "groupSeed" {
+            let memo_string = field.text().await.map_err(|_| {
+                AppError::CreatePromoRequestError("groupSeed value not valid".to_string())
+            })?;
+            Ok(memo_string)
+        } else {
+            return Err(AppError::CreatePromoRequestError(
+                "invalid field name".to_string(),
+            ));
+        }
+    } else {
+        Err(AppError::CreatePromoRequestError(
+            "groupSeed field did not exist".to_string(),
+        ))
+    }?;
+
     let memo = if let Some(field) = multipart.next_field().await.unwrap() {
         if field.name().expect("name field should exist") == "memo" {
             let memo_string = field.text().await.map_err(|_| {
@@ -86,9 +104,11 @@ pub async fn handler(
     let (name, symbol, max_mint, max_burn) = get_promo_args(metadata_data_obj)?;
     let mint_keypair = Keypair::new();
 
+    let group_seed = Pubkey::from_str(&group_seed_string)?;
     // Create promo instruction.
     let ix = create_create_promo_instruction(
         state.promo_owner.pubkey(),
+        group_seed,
         mint_keypair.pubkey(),
         state.platform,
         name,
@@ -137,8 +157,12 @@ pub fn get_promo_args(
                 .iter()
                 .filter_map(|a| {
                     let attribute = a.as_object()?;
-                    if let Some(value) = attribute.get("maxMint") {
-                        value.as_u64()
+                    if let Some(trait_type) = attribute.get("trait_type") {
+                        if trait_type == "maxMint" {
+                            attribute.get("value").map(|v| v.as_u64()).unwrap_or(None)
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
@@ -151,8 +175,12 @@ pub fn get_promo_args(
                 .iter()
                 .filter_map(|a| {
                     let attribute = a.as_object()?;
-                    if let Some(value) = attribute.get("maxBurn") {
-                        value.as_u64()
+                    if let Some(trait_type) = attribute.get("trait_type") {
+                        if trait_type == "maxBurn" {
+                            attribute.get("value").map(|v| v.as_u64()).unwrap_or(None)
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }

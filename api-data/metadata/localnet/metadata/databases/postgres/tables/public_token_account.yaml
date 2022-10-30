@@ -1,3 +1,31 @@
 table:
   name: token_account
   schema: public
+object_relationships:
+  - name: mintObject
+    using:
+      manual_configuration:
+        column_mapping:
+          mint: id
+        insertion_order: null
+        remote_table:
+          name: mint
+          schema: public
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - amount
+        - delegated_amount
+        - is_native
+        - slot
+        - write_version
+        - close_authority
+        - delegate
+        - id
+        - mint
+        - owner
+        - state
+        - created_at
+        - modified_at
+      filter: {}

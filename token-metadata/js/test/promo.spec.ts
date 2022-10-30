@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, } from '../src';
+import { TokenMetadataProgram, AdminSettings, DataV2, PromoExtended, Group } from '../src';
 import { PublicKey, Keypair, Transaction, Connection } from '@solana/web3.js';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
@@ -49,10 +49,29 @@ describe('promo', () => {
   let mint: PublicKey;
   let promoExtended: PromoExtended;
 
+  let group: PublicKey;
+  const groupSeed = Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/group_seed-keypair.json'))),
+  ).publicKey;
+
+  const groupMember1 = Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/group_member_1-keypair.json'))),
+  );
+
+  const tokenMetadataProgramGroupMember1 = new TokenMetadataProgram(new anchor.AnchorProvider(
+    connection,
+    new anchor.Wallet(groupMember1),
+    options
+  ));
+
+  let groupAccount: Group;
+
+
+
   it('funds accounts', async () => {
     const amount = 1_000_000_000;
     const transaction = new Transaction();
-    const addresses = [platform.publicKey, promoOwner.publicKey];
+    const addresses = [platform.publicKey, promoOwner.publicKey, groupMember1.publicKey];
     addresses.forEach((address) => {
       transaction.add(
         anchor.web3.SystemProgram.transfer({
@@ -84,6 +103,50 @@ describe('promo', () => {
       'Admin platform incorrect.',
     );
   });
+
+  it('creates group', async () => {
+
+    const members = [promoOwner.publicKey, groupMember1.publicKey]
+    const membersCount = 10;
+    const lamports = 20_000_000;
+    const memo = "Created a new group for bokoup store group";
+
+    [group] = await tokenMetadataProgramPromoOwner.createGroup(groupSeed, membersCount, members, groupSeed, lamports, memo);
+
+    groupAccount = (await tokenMetadataProgram.program.account.group.fetch(
+      group,
+    )) as Group;
+    expect(groupAccount.owner.toString()).to.equal(
+      promoOwner.publicKey.toString(),
+      'Group incorrect.',
+    );
+    console.log("accountOwner", promoOwner.publicKey.toString());
+
+    console.log("groupAccount", groupAccount);
+    console.log("groupSeed", groupSeed);
+
+    const groupAccountInfo =
+      await tokenMetadataProgram.program.provider.connection.getAccountInfo(
+        group,
+      );
+
+    expect(groupAccountInfo?.lamports).to.equal(
+      23396480,
+      'Group lamports incorrect.',
+    );
+
+    console.log("groupAccountInfo", groupAccountInfo);
+  });
+
+
+  it('transfers cpi', async () => {
+    tokenMetadataProgramPromoOwner.program.methods.transferCpi(1_000_000).accounts({
+      group,
+      platform: adminSettingsAccount.platform,
+      adminSettings
+    }).rpc()
+  });
+
 
   it('Creates two promos', async () => {
     const metadataData1: DataV2 = {
@@ -123,6 +186,7 @@ describe('promo', () => {
       mint = await tokenMetadataProgramPromoOwner.createPromo(
         metadataData,
         true,
+        groupSeed,
         maxMint,
         maxRedeem,
         adminSettingsAccount.platform,
@@ -146,9 +210,11 @@ describe('promo', () => {
     }
   });
 
+  // This has group member1 pay for the transaction, which they are able to do because
+  // of their membership in the group that owns the promo.
   it('Mints a promo token', async () => {
     const [tokenAccountAccount, mintAccount] = await tokenMetadataProgram
-      .mintPromoToken(mint, promoOwner, "just a string for a memo")
+      .mintPromoToken(mint, groupMember1, groupSeed, "just a string for a memo")
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),
@@ -175,7 +241,7 @@ describe('promo', () => {
     };
 
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(mint, promoOwner, JSON.stringify(memo))
+      .delegatePromoToken(mint, groupMember1, groupSeed, JSON.stringify(memo))
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
     console.log('tokenAccountAccount: ', tokenAccountAccount);
@@ -193,8 +259,8 @@ describe('promo', () => {
       memo: "burned delegated token"
     };
 
-    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgramPromoOwner
-      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey, JSON.stringify(memo))
+    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgramGroupMember1
+      .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey, groupSeed, JSON.stringify(memo))
       .then((tokenAccount) =>
         Promise.all([
           tokenMetadataProgram.getTokenAccount(tokenAccount),

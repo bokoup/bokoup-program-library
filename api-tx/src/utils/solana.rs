@@ -22,7 +22,7 @@ use bpl_token_metadata::{
     state::{DataV2, Promo},
     utils::{
         find_admin_address, find_associated_token_address, find_authority_address,
-        find_metadata_address, find_promo_address,
+        find_group_address, find_metadata_address, find_promo_address,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,7 @@ use std::str::FromStr;
 
 pub fn create_create_promo_instruction(
     payer: Pubkey,
+    group_seed: Pubkey,
     mint: Pubkey,
     platform: Pubkey,
     name: String,
@@ -47,9 +48,11 @@ pub fn create_create_promo_instruction(
     let (promo, _promo_bump) = find_promo_address(&mint);
     let (metadata, _metadata_bump) = find_metadata_address(&mint);
     let (admin_settings, _admin_bump) = find_admin_address();
+    let (group, _group_bump) = find_group_address(&group_seed);
 
     let accounts = create_promo_accounts {
         payer,
+        group,
         mint,
         metadata,
         authority,
@@ -65,7 +68,7 @@ pub fn create_create_promo_instruction(
     .to_account_metas(Some(true));
 
     let promo_data = Promo {
-        owner: payer,
+        owner: group,
         mint,
         metadata,
         mint_count: 0,
@@ -101,6 +104,7 @@ pub fn create_create_promo_instruction(
 
 pub fn create_mint_promo_instruction(
     payer: Pubkey,
+    group: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
     memo: Option<String>,
@@ -111,6 +115,7 @@ pub fn create_mint_promo_instruction(
 
     let accounts = mint_promo_token_accounts {
         payer,
+        group,
         token_owner,
         mint,
         authority,
@@ -135,18 +140,20 @@ pub fn create_mint_promo_instruction(
 
 pub fn create_delegate_promo_instruction(
     payer: Pubkey,
+    group_seed: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
     memo: Option<String>,
 ) -> Result<Instruction, AppError> {
-    let (authority, _auth_bump) = find_authority_address();
     let (promo, _promo_bump) = find_promo_address(&mint);
     let token_account = find_associated_token_address(&token_owner, &mint);
+    let (group, _group_bump) = find_group_address(&group_seed);
 
     let accounts = delegate_promo_token_accounts {
         payer,
+        group,
         token_owner,
-        authority,
+        mint,
         promo,
         token_account,
         memo_program: spl_memo::ID,
@@ -166,6 +173,7 @@ pub fn create_delegate_promo_instruction(
 
 pub fn create_burn_delegated_promo_instruction(
     payer: Pubkey,
+    group_seed: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
     platform: Pubkey,
@@ -175,9 +183,11 @@ pub fn create_burn_delegated_promo_instruction(
     let (promo, _promo_bump) = find_promo_address(&mint);
     let (admin_settings, _admin_bump) = find_admin_address();
     let token_account = find_associated_token_address(&token_owner, &mint);
+    let (group, _group_bump) = find_group_address(&group_seed);
 
     let accounts = burn_delegated_promo_token_accounts {
         payer,
+        group,
         mint,
         authority,
         promo,

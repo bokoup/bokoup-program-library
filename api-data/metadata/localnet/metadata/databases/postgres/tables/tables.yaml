@@ -12,5 +12,6 @@
 - "!include public_mint_promo_token.yaml"
 - "!include public_mint_relation.yaml"
 - "!include public_promo.yaml"
+- "!include public_promo_group.yaml"
 - "!include public_purchase_receipt.yaml"
 - "!include public_token_account.yaml"

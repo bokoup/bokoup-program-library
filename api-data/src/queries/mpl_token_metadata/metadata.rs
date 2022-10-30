@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::queries::mpl_token_metadata::creator;
 use futures::future::try_join;
 use mpl_token_metadata::state::{Key, Metadata, TokenStandard, UseMethod};
@@ -70,16 +72,21 @@ pub async fn upsert(
 
     let slot = slot as i64;
     let write_version = write_version as i64;
+    let reqwest_client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .unwrap();
 
-    let metadata_json: Option<serde_json::Value> = if let Ok(response) = reqwest::get(&uri).await {
-        if let Ok(result) = response.json::<serde_json::Value>().await {
-            Some(result)
+    let metadata_json: Option<serde_json::Value> =
+        if let Ok(response) = reqwest_client.get(&uri).send().await {
+            if let Ok(result) = response.json::<serde_json::Value>().await {
+                Some(result)
+            } else {
+                None
+            }
         } else {
             None
-        }
-    } else {
-        None
-    };
+        };
 
     let result = try_join(
         client.query_one(

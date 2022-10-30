@@ -4,6 +4,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use solana_sdk::{signer::Signer, transaction::Transaction};
 use std::{str::FromStr, sync::Arc};
 
@@ -20,27 +21,34 @@ pub async fn handler(
         memo,
     }): Path<Params>,
     Extension(state): Extension<Arc<State>>,
-) -> Result<Json<ResponseData>, AppError> {
+) -> Result<Json<Value>, AppError> {
     tracing::debug!(mint_string = mint_string, message, memo);
 
     let token_owner = Pubkey::from_str(&data.account)?;
     let payer = state.promo_owner.pubkey();
+    let group_seed = Pubkey::new_unique();
 
     let mint = Pubkey::from_str(&mint_string)?;
-    let instruction =
-        create_burn_delegated_promo_instruction(payer, token_owner, mint, state.platform, memo)?;
+    let instruction = create_burn_delegated_promo_instruction(
+        payer,
+        group_seed,
+        token_owner,
+        mint,
+        state.platform,
+        memo,
+    )?;
 
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;
-    tx.try_partial_sign(&[&state.promo_owner], latest_blockhash)?;
+    tx.sign(&[&state.promo_owner], latest_blockhash);
 
     let serialized = bincode::serialize(&tx)?;
-    let transaction = base64::encode(serialized);
+    let tx_str = base64::encode(serialized);
+    let result = state.solana.post_transaction_test(&tx_str).await?;
 
-    Ok(Json(ResponseData {
-        transaction,
-        message,
-    }))
+    tracing::debug!(result = format!("{:?}", result));
+
+    Ok(Json(result))
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

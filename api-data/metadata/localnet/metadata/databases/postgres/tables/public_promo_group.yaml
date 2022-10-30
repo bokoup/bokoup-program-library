@@ -1,0 +1,3 @@
+table:
+  name: promo_group
+  schema: public
