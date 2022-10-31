@@ -185,6 +185,7 @@ pub fn create_mint_promo_instruction(
 
 pub fn create_delegate_promo_instruction(
     payer: Pubkey,
+    delegate: Pubkey,
     group_seed: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
@@ -196,6 +197,7 @@ pub fn create_delegate_promo_instruction(
 
     let accounts = delegate_promo_token_accounts {
         payer,
+        delegate,
         group,
         token_owner,
         mint,

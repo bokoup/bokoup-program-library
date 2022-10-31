@@ -243,7 +243,7 @@ describe('promo', () => {
     };
 
     const tokenAccountAccount = await tokenMetadataProgram
-      .delegatePromoToken(mint, groupMember1, groupSeed, JSON.stringify(memo))
+      .delegatePromoToken(mint, groupMember1.publicKey, groupSeed, JSON.stringify(memo))
       .then((tokenAccount) => tokenMetadataProgram.getTokenAccount(tokenAccount));
     expect(Number(tokenAccountAccount.delegatedAmount)).to.equal(1, 'Delegated amount incorrect.');
     console.log('tokenAccountAccount: ', tokenAccountAccount);

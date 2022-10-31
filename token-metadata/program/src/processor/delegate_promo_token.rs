@@ -8,7 +8,7 @@ impl<'info> DelegatePromoToken<'info> {
 
         let delegate_ctx = anchor_spl::token::Approve {
             to: self.token_account.to_account_info(),
-            delegate: self.payer.to_account_info(),
+            delegate: self.delegate.to_account_info(),
             authority: self.token_owner.to_account_info(),
         };
 
@@ -18,7 +18,10 @@ impl<'info> DelegatePromoToken<'info> {
         )?;
 
         if let Some(memo) = memo {
-            let account_infos = vec![self.payer.to_account_info()];
+            let account_infos = vec![
+                self.payer.to_account_info(),
+                self.token_owner.to_account_info(),
+            ];
             create_memo(memo.to_string(), account_infos)?;
         }
 

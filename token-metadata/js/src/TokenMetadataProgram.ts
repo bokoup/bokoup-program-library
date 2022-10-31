@@ -216,19 +216,18 @@ export class TokenMetadataProgram {
    *
    * @return Token account address
    */
-  async delegatePromoToken(mint: PublicKey, groupMember: Keypair, groupSeed: PublicKey, memo: string | null): Promise<PublicKey> {
+  async delegatePromoToken(mint: PublicKey, delegate: PublicKey, groupSeed: PublicKey, memo: string | null): Promise<PublicKey> {
     const [tokenAccount] = await this.findAssociatedTokenAccountAddress(mint, this.payer.publicKey);
     const [group] = await this.findPromoGroupAddress(groupSeed);
 
     await this.program.methods.delegatePromoToken(memo).accounts({
-      payer: groupMember.publicKey,
+      delegate,
       group,
       tokenOwner: this.payer.publicKey,
       mint,
       tokenAccount,
       memoProgram: this.MEMO_PROGRAM_ID,
-    }).signers([groupMember])
-      .rpc();
+    }).rpc();
 
     return tokenAccount;
   }

@@ -2,6 +2,7 @@
 - "!include public_bid_receipt.yaml"
 - "!include public_burn_delegated_promo_token.yaml"
 - "!include public_create_promo.yaml"
+- "!include public_create_promo_group.yaml"
 - "!include public_creator.yaml"
 - "!include public_delegate_promo_token.yaml"
 - "!include public_floor_price.yaml"

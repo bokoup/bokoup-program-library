@@ -111,11 +111,11 @@ pub fn create_app(cluster: Cluster) -> Router {
             get(get_app_id::handler).post(get_create_promo_group_tx::handler),
         )
         .route(
-            "/promo/delegate/:mint_string/:message",
+            "/promo/delegate/:mint_string/:delegate_string/:message",
             get(get_app_id::handler).post(get_delegate_promo_tx::handler),
         )
         .route(
-            "/promo/delegate/:mint_string/:message/:memo",
+            "/promo/delegate/:mint_string/:delegate_string/:message/:memo",
             get(get_app_id::handler).post(get_delegate_promo_tx::handler),
         )
         .route(
@@ -385,10 +385,13 @@ pub mod test {
         );
     }
 
+    // Platform signer is the payer, group member is the delegate
     #[tokio::test]
     async fn test_get_delegate_promo_tx() {
         dotenv::dotenv().ok();
         let platform_signer = read_keypair_file("../target/deploy/platform_signer-keypair.json")
+            .expect("problem reading keypair file");
+        let delegate = read_keypair_file("../target/deploy/group_member_1-keypair.json")
             .expect("problem reading keypair file");
 
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
@@ -411,7 +414,7 @@ pub mod test {
             .await
             .unwrap();
 
-        let group = get_group_from_promo_group_query(&platform_signer.pubkey(), &result).unwrap();
+        let group = get_group_from_promo_group_query(&delegate.pubkey(), &result).unwrap();
 
         let data = get_mint_promo_tx::Data {
             account: token_owner.to_string(),
@@ -426,8 +429,9 @@ pub mod test {
                 Request::builder()
                     .method(Method::POST)
                     .uri(format!(
-                        "/promo/delegate/{}/{}/{}",
+                        "/promo/delegate/{}/{}/{}/{}",
                         mint.to_string(),
+                        delegate.pubkey().to_string(),
                         message.into_owned(),
                         memo_encoded.into_owned()
                     ))
@@ -445,6 +449,7 @@ pub mod test {
 
         let instruction = create_delegate_promo_instruction(
             platform_signer.pubkey(),
+            delegate.pubkey(),
             group,
             token_owner,
             mint,

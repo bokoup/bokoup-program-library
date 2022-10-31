@@ -15,6 +15,14 @@ pub struct Params {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct DelegateParams {
+    pub mint_string: String,
+    pub delegate_string: String,
+    pub message: String,
+    pub memo: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct PromoGroupParams {
     pub group_seed: String,
     pub members: Vec<String>,

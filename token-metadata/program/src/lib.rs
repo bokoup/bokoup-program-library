@@ -275,21 +275,23 @@ pub struct MintPromoToken<'info> {
 
 /// Accounts related to the delegation of a promo token.
 ///
-/// Delegates a token to the payer.
+/// Delegates a token to the delegate.
 ///
-/// Checks to make sure signer is a member of group specified in owner property of
-/// promo. (Could include a designated platform address if merchants wanted customers
-/// to be able to delegate their tokens without them having to sign).
+/// Checks to make sure delegate is a member of group specified in owner property of
+/// promo to ensure delegate will be able to sign to have the group pay platform burn
+/// fee.
 ///
-/// Also requires sigture from token owner as the authrity of the token account.
+/// Requires signature from token owner as the authority of the token account.
 ///
 /// No platform fees result from delegating a token.
 #[derive(Accounts, Clone)]
 pub struct DelegatePromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    /// CHECK: checked via group constraints
+    pub delegate: UncheckedAccount<'info>,
     #[account(mut,
-        constraint = group.members.contains(&payer.key()),
+        constraint = group.members.contains(&delegate.key()),
         constraint = group.key() == promo.owner,
     )]
     pub group: Account<'info, PromoGroup>,

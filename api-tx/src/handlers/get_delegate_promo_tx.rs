@@ -9,7 +9,7 @@ use std::{str::FromStr, sync::Arc};
 
 use crate::{
     error::AppError,
-    handlers::Params,
+    handlers::DelegateParams,
     utils::{
         data::{get_group_from_promo_group_query, MINT_QUERY},
         solana::create_delegate_promo_instruction,
@@ -19,13 +19,15 @@ use crate::{
 
 use super::PayResponse;
 
+// Payer is distinct from
 pub async fn handler(
     Json(data): Json<Data>,
-    Path(Params {
+    Path(DelegateParams {
         mint_string,
+        delegate_string,
         message,
         memo,
-    }): Path<Params>,
+    }): Path<DelegateParams>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<PayResponse>, AppError> {
     tracing::debug!(mint_string = mint_string, message, memo);
@@ -34,6 +36,7 @@ pub async fn handler(
     let payer = state.platform_signer.pubkey();
 
     let mint = Pubkey::from_str(&mint_string)?;
+    let delegate = Pubkey::from_str(&delegate_string)?;
 
     let query = serde_json::json!({ "query": MINT_QUERY, "variables": {"mint": mint_string}});
     let result: serde_json::Value = state
@@ -46,9 +49,10 @@ pub async fn handler(
         .json()
         .await?;
 
-    let group = get_group_from_promo_group_query(&payer, &result)?;
+    let group = get_group_from_promo_group_query(&delegate, &result)?;
 
-    let instruction = create_delegate_promo_instruction(payer, group, token_owner, mint, memo)?;
+    let instruction =
+        create_delegate_promo_instruction(payer, delegate, group, token_owner, mint, memo)?;
 
     let tx = Transaction::new_with_payer(&[instruction], Some(&payer));
 

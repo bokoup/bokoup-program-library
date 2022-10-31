@@ -13,7 +13,9 @@ Below are basic transaction types that the transaction server needs to facilitat
 3. Create promo token mint with metadata
 4. Update promo token (TODO)
 5. Merchant mint promo token to customer
-6. Customer delegate promo token to merchant
+    * Freely mintable
+    * Mint with merchant approval required (TODO)
+6. Customer delegate promo token to merchant - [needs to be reworked to include ]
 7. Merchant burn delegated token
 8. Customer undelegate token from merchant (TODO)
 9. Customer transfer token (TODO)
@@ -59,7 +61,7 @@ To start with, the intial point of sale and ecommerce applications support only 
 * `{groupSeed}` base58 encoded string representation of a Pubkey
 * `{members}` url encoded array of base58 string representations of Pubkeys
 * `{lamports}` is the amount to be transferred from payer/owner to the group to pay for transaction fees incurred by members of the group
-* `{memo}` Optional url encoded string to be included as a memo in the on chain transaction to create the group. If a json encoded string, will be available from the bokoup graphql data api as json.
+* `{memo}` Optional url encoded string to be included as a memo in the on chain transaction. If a json encoded string, will be available from the bokoup graphql data api as json.
 
 
 Create Promo Token
@@ -108,7 +110,7 @@ An example use case is placing low value promotional offers in printed QR codes 
 #### Parameters
 * `{mintString}` base58 encoded string representation of Pubkey address of mint associated with promo
 * `{message}` url encoded string to be displayed in the receiving application to describe the received transaction
-* `{memo}` Optional url encoded string to be included as a memo in the on chain transaction to create the group. If a json encoded string, will be available from the bokoup graphql data api as json.
+* `{memo}` Optional url encoded string to be included as a memo in the on chain transaction. If a json encoded string, will be available from the bokoup graphql data api as json.
 
 ### Merchant Approval/Signature Required
 Merchant approval to mint a token is achieved via the following steps:
@@ -162,49 +164,18 @@ An example use case is a higher value promotion granted at the point of sale upo
 ## Delegate Promo Token
 ---------------------------------
 
-Merchants can initiate a request to have a customer delegate a token to them by following
-a process similar to the one described above for minting tokens with merchant approval.
+To make tokens freely available to be delegated without requiring a signature from a group member, merchants can create QR codes with the endpoint below that will respond with transactions paid for by the platform. Delegate must be a member of the group that owns the promo being delegated to ensure that it is authorized to commit the group account to fund the platform fee that gets paid when the token is burned.
 
-1. Merchant requests delegate transaction from server
-2. Merchant signs and posts transaction back to server
-3. Server stores transaction signed by merchant
-4. Customer requests transaction
-5. Customer signs transaction and submits to the network
-
-#### Merchant transaction request
 ```
-/promo/merchant/delegate/{mintString}/{tokenOwner}/{message}/{memo}
+/promo/delegate/{mintString}/{delegateString}/{message}/{memo}
 ```
-##### Methods
+#### Methods
 1. `GET` request returns logo and label identifying the application
-2. `POST` with merchant address in body returns transaction to delegate token and message. Merchant address can be any member of group associated with promo token.
-3. Merchant signs transaction and posts back to server
-
-##### Parameters
-* `{mintString}` base58 encoded string representation of Pubkey address of mint associated with promo
-* `{tokenOwner}` base58 encoded string representation of Pubkey address ok token owner. Should be the owner address, not the token acount address.
-* `{message}` url encoded string to be displayed in the receiving application to describe the transaction to the merchant.
-* `{memo}` Optional url encoded string to be included as a memo in the on chain transaction to delegate the token. If a json encoded string, will be available from the bokoup graphql data api as json.
-
-#### Merchant post signed transaction
-```
-/promo/merchant/signed
-```
-##### Methods
-1. `POST` with json object including transaction as base64 encoded string and customer message as utf-8 string
-
-#### Customer transaction request
-```
-/promo/signed/{signature}/{message}
-```
-1. `GET` request returns logo and label identifying the application
-2. `POST` with customer / token owner address in body returns transaction and message
+2. `POST` with token owner address in body returns transaction and message
 3. Token owner signs and submits transaction directly to the network
 
-##### Parameters
-* `{message}` url encoded string to be displayed in the receiving application to describe the transaction to the customer
+#### Parameters
+* `{mintString}` base58 encoded string representation of Pubkey address of mint associated with promo
+* `{message}` url encoded string to be displayed in the receiving application to describe the received transaction
+* `{memo}` Optional url encoded string to be included as a memo in the on chain transaction. If a json encoded string, will be available from the bokoup graphql data api as json.
 
-### Implementation Details
-* The platform queries the bokoup data api to confirm that the platform address is included in the members of the group that owns the promo, returning a bad request response if not included.
-* The process relies on the requirement that the transaction be signed by both parties and submitted to the network within 150 blocks of the blockhash included with the first signature. In practice, this provides a window of approximately one minute for the token owner to sign the transaction after the merchant does, which should be ample in the context of a typical point of sale or ecommerce transaction.
-* The json object with the transaction and customer message gets stored in an in memory key-value store with using the signature as the key, set to expire after one minute.
