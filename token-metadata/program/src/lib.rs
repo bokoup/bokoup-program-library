@@ -146,7 +146,7 @@ pub struct CreatePromoGroup<'info> {
     /// CHECK: pubkey checked via constraint
     pub seed: UncheckedAccount<'info>,
     #[account(
-        init_if_needed,
+        init,
         constraint = data.members.len() <= MEMBERS_CAPACITY as usize,
         constraint = data.owner == payer.key(),
         constraint = data.members.contains(&data.owner),
@@ -312,7 +312,8 @@ pub struct DelegatePromoToken<'info> {
 /// Accounts related to the burning of a delegated promo token.
 ///
 /// Checks to make sure signer is a member of group specified in owner property of
-/// promo. Only requires
+/// promo in order to execute transaction to transfer lamports from group to platform
+/// to pay `burn_promo_token_lamports`.
 ///
 /// The fee specified in the `burn_promo_token_lamports` property of the [AdminSettings] account
 /// is transferred from the [Group] specified in the `owner` property of the [Promo] from the

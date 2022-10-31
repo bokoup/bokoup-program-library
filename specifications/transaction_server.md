@@ -34,7 +34,7 @@ Transaction Signing Requirements
 | Burn Delegated Token |             |  [x]         |             |
 
 
-Create Merchant Group
+Create Group
 ---------------------------------
 
 ```
@@ -44,7 +44,7 @@ In order to enable merchants with multiple locations and/or multiple check out s
 
 The owner of the group can add and remove members. Any of the members can initiate mint, delegate or burn transactions. The group is the payer of the bokoup token mint creation and burn fees.
 
-Anybody can create a group, with the payer of the create group transaction designated as the owner of the group. The group account is owned by the bokoup program with constraints on its use enforced by the program. The account address is program derived based on a supplied Pubkey.
+Anybody can create a group, with the payer of the transaction to create the group designated as the owner of the group. The group account is owned by the bokoup program with constraints on its use enforced by the program. The account address is program derived based on a supplied Pubkey.
 
 To start with, the intial point of sale and ecommerce applications support only one group per organization.
 

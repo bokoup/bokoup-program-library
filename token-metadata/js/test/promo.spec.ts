@@ -57,6 +57,9 @@ describe('promo', () => {
   const groupMember1 = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/group_member_1-keypair.json'))),
   );
+  const plaformSigner = Keypair.fromSecretKey(
+    new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/platform_signer-keypair.json'))),
+  );
 
   const tokenMetadataProgramGroupMember1 = new TokenMetadataProgram(new anchor.AnchorProvider(
     connection,
@@ -71,7 +74,7 @@ describe('promo', () => {
   it('funds accounts', async () => {
     const amount = 1_000_000_000;
     const transaction = new Transaction();
-    const addresses = [platform.publicKey, promoOwner.publicKey, groupMember1.publicKey];
+    const addresses = [platform.publicKey, promoOwner.publicKey, groupMember1.publicKey, plaformSigner.publicKey];
     addresses.forEach((address) => {
       transaction.add(
         anchor.web3.SystemProgram.transfer({
@@ -106,7 +109,7 @@ describe('promo', () => {
 
   it('creates group', async () => {
 
-    const members = [promoOwner.publicKey, groupMember1.publicKey]
+    const members = [promoOwner.publicKey, groupMember1.publicKey, plaformSigner.publicKey]
     const lamports = 20_000_000;
     const memo = "Created a new group for bokoup store group";
 

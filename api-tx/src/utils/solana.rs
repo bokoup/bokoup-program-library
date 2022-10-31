@@ -10,16 +10,18 @@ use anchor_lang::{
 use bpl_token_metadata::{
     accounts::{
         BurnDelegatedPromoToken as burn_delegated_promo_token_accounts,
-        CreatePromo as create_promo_accounts, DelegatePromoToken as delegate_promo_token_accounts,
+        CreatePromo as create_promo_accounts, CreatePromoGroup as create_promo_group_accounts,
+        DelegatePromoToken as delegate_promo_token_accounts,
         MintPromoToken as mint_promo_token_accounts,
     },
     instruction::{
         BurnDelegatedPromoToken as burn_delegated_promo_token_instruction,
         CreatePromo as create_promo_instruction,
+        CreatePromoGroup as create_promo_group_instruction,
         DelegatePromoToken as delegate_promo_token_instruction,
         MintPromoToken as mint_promo_token_instruction,
     },
-    state::{DataV2, Promo},
+    state::{DataV2, Promo, PromoGroup},
     utils::{
         find_admin_address, find_associated_token_address, find_authority_address,
         find_group_address, find_metadata_address, find_promo_address,
@@ -30,6 +32,49 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use solana_sdk::{commitment_config::CommitmentLevel, hash::Hash};
 use std::str::FromStr;
+
+pub fn create_create_promo_group_instruction(
+    payer: Pubkey,
+    group_seed: Pubkey,
+    members: Vec<Pubkey>,
+    lamports: u64,
+    memo: Option<String>,
+) -> Result<Instruction, AppError> {
+    if !members.contains(&payer) {
+        return Err(AppError::PayerNotInMembers);
+    }
+
+    let (promo_group, nonce) = find_group_address(&group_seed);
+
+    let data = PromoGroup {
+        owner: payer,
+        seed: group_seed,
+        nonce,
+        members,
+    };
+
+    let accounts = create_promo_group_accounts {
+        payer,
+        seed: group_seed,
+        promo_group,
+        memo_program: spl_memo::ID,
+        system_program: system_program::ID,
+    }
+    .to_account_metas(Some(true));
+
+    let data = create_promo_group_instruction {
+        data,
+        lamports,
+        memo,
+    }
+    .data();
+
+    Ok(Instruction {
+        program_id: bpl_token_metadata::id(),
+        accounts,
+        data,
+    })
+}
 
 pub fn create_create_promo_instruction(
     payer: Pubkey,
@@ -173,7 +218,7 @@ pub fn create_delegate_promo_instruction(
 
 pub fn create_burn_delegated_promo_instruction(
     payer: Pubkey,
-    group_seed: Pubkey,
+    group: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
     platform: Pubkey,
@@ -183,7 +228,6 @@ pub fn create_burn_delegated_promo_instruction(
     let (promo, _promo_bump) = find_promo_address(&mint);
     let (admin_settings, _admin_bump) = find_admin_address();
     let token_account = find_associated_token_address(&token_owner, &mint);
-    let (group, _group_bump) = find_group_address(&group_seed);
 
     let accounts = burn_delegated_promo_token_accounts {
         payer,

@@ -2,7 +2,7 @@ use axum::{
     error_handling::HandleErrorLayer,
     http::{header, Method, StatusCode},
     response::IntoResponse,
-    routing::{get, post},
+    routing::get,
     Router,
 };
 use bundlr_sdk::{Bundlr, Ed25519Signer};
@@ -32,9 +32,17 @@ pub mod utils;
 pub const CLOVER_URL: &str = "https://sandbox.dev.clover.com/v3/apps/";
 pub const CLOVER_APP_ID: &str = "MAC8DQKWCCB1R";
 pub const PROMO_OWNER_KEYPAIR_PATH: &str = "/keys/promo_owner-keypair.json";
+pub const PLATFORM_SIGNER_KEYPAIR_PATH: &str = "/keys/platform_signer-keypair.json";
+
+// `platform` is the address of the account for collecting platform fees
+// `platform_signer` is the courtesy signing key that pays minor network
+// fees on public mints.
+//
+// `platform_signer` is also the payer for bundlr transactions.
+// TODO: check bundlr balance programatically and alert of running low.
 
 pub struct State {
-    pub promo_owner: Keypair,
+    pub platform_signer: Keypair,
     pub platform: Pubkey,
     pub solana: Solana,
     pub clover: Clover,
@@ -50,7 +58,7 @@ impl State {
         let signer = Ed25519Signer::new(keypair);
 
         Self {
-            promo_owner: read_keypair_file(PROMO_OWNER_KEYPAIR_PATH).unwrap(),
+            platform_signer: read_keypair_file(PLATFORM_SIGNER_KEYPAIR_PATH).unwrap(),
             platform: Pubkey::from_str("2R7GkXvQQS4iHptUvQMhDvRSNXL8tAuuASNvCYgz3GQW").unwrap(),
             solana: Solana {
                 cluster,
@@ -95,6 +103,14 @@ pub fn create_app(cluster: Cluster) -> Router {
             get(get_app_id::handler).post(get_mint_promo_tx::handler),
         )
         .route(
+            "/promo/group/:group_seed/:members/:lamports",
+            get(get_app_id::handler).post(get_create_promo_group_tx::handler),
+        )
+        .route(
+            "/promo/group/:group_seed/:members/:lamports/:memo",
+            get(get_app_id::handler).post(get_create_promo_group_tx::handler),
+        )
+        .route(
             "/promo/delegate/:mint_string/:message",
             get(get_app_id::handler).post(get_delegate_promo_tx::handler),
         )
@@ -103,17 +119,20 @@ pub fn create_app(cluster: Cluster) -> Router {
             get(get_app_id::handler).post(get_delegate_promo_tx::handler),
         )
         .route(
-            "/promo/burn-delegated/:mint_string/:message",
-            get(get_app_id::handler).post(burn_delegated_promo::handler),
+            "/promo/burn-delegated/:token_account_string/:message",
+            get(get_app_id::handler).post(get_burn_delegated_promo_tx::handler),
         )
         .route(
-            "/promo/burn-delegated/:mint_string/:message/:memo",
-            get(get_app_id::handler).post(burn_delegated_promo::handler),
+            "/promo/burn-delegated/:token_account_string/:message/:memo",
+            get(get_app_id::handler).post(get_burn_delegated_promo_tx::handler),
         )
         .route(
-            "/promo/create",
-            post(create_promo::handler), // .layer(DefaultBodyLimit::disable())
-                                         // .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024 /* 10mb */)), // ),
+            "/promo/create/:payer/:group_seed",
+            get(get_app_id::handler).post(get_create_promo_tx::handler),
+        )
+        .route(
+            "/promo/create/:payer/:group_seed/:memo",
+            get(get_app_id::handler).post(get_create_promo_tx::handler),
         )
         .layer(
             ServiceBuilder::new()
@@ -155,7 +174,8 @@ pub mod test {
         body::Body,
         http::{Method, Request, StatusCode},
     };
-    use serde_json::Value;
+    use bpl_token_metadata::utils::find_group_address;
+    use handlers::PayResponse;
     use solana_sdk::{signature::Signer, transaction::Transaction};
     use std::net::{SocketAddr, TcpListener};
     use tokio::fs;
@@ -165,11 +185,11 @@ pub mod test {
 
     const MESSAGE: &str = "This is a really long message that tells you to do something.";
 
-    async fn fetch_mint(url: &String) -> Value {
+    async fn fetch_mint(url: &String) -> Pubkey {
         let client = reqwest::Client::new();
         let result: serde_json::Value = client
             .post(url)
-            .json(&serde_json::json!({ "query": MINT_QUERY }))
+            .json(&serde_json::json!({ "query": FIRST_MINT_QUERY }))
             .send()
             .await
             .unwrap()
@@ -179,7 +199,7 @@ pub mod test {
 
         tracing::debug!(result = result.to_string());
 
-        let mint = result
+        let mint_str = result
             .as_object()
             .unwrap()
             .get("data")
@@ -198,7 +218,45 @@ pub mod test {
             .unwrap()
             .as_str()
             .unwrap();
-        serde_json::json!({ "mint": mint })
+
+        Pubkey::from_str(mint_str).unwrap()
+    }
+
+    async fn fetch_token_account(url: &String) -> Pubkey {
+        let client = reqwest::Client::new();
+        let result: serde_json::Value = client
+            .post(url)
+            .json(&serde_json::json!({ "query": FIRST_TOKEN_ACCOUNT_QUERY }))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        tracing::debug!(result = result.to_string());
+
+        let mint_str = result
+            .as_object()
+            .unwrap()
+            .get("data")
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("tokenAccount")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .get(0)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("id")
+            .unwrap()
+            .as_str()
+            .unwrap();
+
+        Pubkey::from_str(mint_str).unwrap()
     }
 
     #[tokio::test]
@@ -241,26 +299,21 @@ pub mod test {
         );
     }
 
+    // Testing end user requesting mint tx where merchant has added platform signer to group members
+    // to pay for transaction fees with no further merchant approval required.
     #[tokio::test]
     async fn test_get_mint_promo_tx() {
+        let platform_signer = read_keypair_file("../target/deploy/platform_signer-keypair.json")
+            .expect("problem reading keypair file");
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
         let state = State::new(Cluster::Devnet);
         let app = create_app(Cluster::Devnet);
         let token_owner = Pubkey::new_unique();
 
-        let result = fetch_mint(&state.data_url).await;
+        let mint = fetch_mint(&state.data_url).await;
 
-        let mint_str = result
-            .as_object()
-            .unwrap()
-            .get("mint")
-            .unwrap()
-            .as_str()
-            .unwrap();
-
-        let mint = Pubkey::from_str(mint_str).unwrap();
-
-        let query = serde_json::json!({ "query": PROMO_GROUP_QUERY, "variables": {"mint": mint.to_string()}});
+        let query =
+            serde_json::json!({ "query": MINT_QUERY, "variables": {"mint": mint.to_string()}});
         let result: serde_json::Value = state
             .solana
             .client
@@ -273,7 +326,7 @@ pub mod test {
             .await
             .unwrap();
 
-        let group = get_group(&state.promo_owner.pubkey(), &result).unwrap();
+        let group = get_group_from_promo_group_query(&platform_signer.pubkey(), &result).unwrap();
 
         let data = get_mint_promo_tx::Data {
             account: token_owner.to_string(),
@@ -302,16 +355,14 @@ pub mod test {
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        let parsed_response: get_mint_promo_tx::ResponseData =
-            serde_json::from_slice(&body).unwrap();
-
+        let parsed_response: PayResponse = serde_json::from_slice(&body).unwrap();
         let txd: Transaction = bincode::deserialize(
             &base64::decode::<String>(parsed_response.transaction.clone()).unwrap(),
         )
         .unwrap();
 
         let instruction = create_mint_promo_instruction(
-            state.promo_owner.pubkey(),
+            platform_signer.pubkey(),
             group,
             token_owner,
             mint,
@@ -319,15 +370,15 @@ pub mod test {
         )
         .unwrap();
 
-        let mut tx = Transaction::new_with_payer(&[instruction], Some(&state.promo_owner.pubkey()));
-        tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer.pubkey()));
+        tx.try_partial_sign(&[&platform_signer], txd.message.recent_blockhash)
             .unwrap();
         let serialized = bincode::serialize(&tx).unwrap();
         let transaction = base64::encode(serialized);
 
         assert_eq!(
             parsed_response,
-            get_mint_promo_tx::ResponseData {
+            PayResponse {
                 transaction,
                 message: MESSAGE.to_string(),
             }
@@ -337,13 +388,30 @@ pub mod test {
     #[tokio::test]
     async fn test_get_delegate_promo_tx() {
         dotenv::dotenv().ok();
+        let platform_signer = read_keypair_file("../target/deploy/platform_signer-keypair.json")
+            .expect("problem reading keypair file");
 
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
         let state = State::new(Cluster::Devnet);
         let app = create_app(Cluster::Devnet);
         let token_owner = Pubkey::new_unique();
-        let mint = Pubkey::new_unique();
-        let group_seed = Pubkey::new_unique();
+        let mint = fetch_mint(&state.data_url).await;
+
+        let query =
+            serde_json::json!({ "query": MINT_QUERY, "variables": {"mint": mint.to_string()}});
+        let result: serde_json::Value = state
+            .solana
+            .client
+            .post(&state.data_url)
+            .json(&query)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
+        let group = get_group_from_promo_group_query(&platform_signer.pubkey(), &result).unwrap();
 
         let data = get_mint_promo_tx::Data {
             account: token_owner.to_string(),
@@ -373,114 +441,137 @@ pub mod test {
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        let parsed_response: burn_delegated_promo::ResponseData =
-            serde_json::from_slice(&body).unwrap();
-
-        let txd: Transaction = bincode::deserialize(
-            &base64::decode::<String>(parsed_response.transaction.clone()).unwrap(),
-        )
-        .unwrap();
+        let parsed_response: PayResponse = serde_json::from_slice(&body).unwrap();
 
         let instruction = create_delegate_promo_instruction(
-            state.promo_owner.pubkey(),
-            group_seed,
+            platform_signer.pubkey(),
+            group,
             token_owner,
             mint,
             Some(memo.to_string()),
         )
         .unwrap();
 
-        let mut tx = Transaction::new_with_payer(&[instruction], Some(&state.promo_owner.pubkey()));
-        tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)
-            .unwrap();
+        let tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer.pubkey()));
         let serialized = bincode::serialize(&tx).unwrap();
         let transaction = base64::encode(serialized);
 
         assert_eq!(
             parsed_response,
-            burn_delegated_promo::ResponseData {
+            PayResponse {
                 transaction,
                 message: MESSAGE.to_owned(),
             }
         );
     }
 
-    // #[tokio::test]
-    // async fn test_get_burn_delegated_promo_tx() {
-    //     dotenv::dotenv().ok();
+    #[tokio::test]
+    async fn test_get_burn_delegated_promo_tx() {
+        dotenv::dotenv().ok();
+        let promo_owner = read_keypair_file("../target/deploy/promo_owner-keypair.json")
+            .expect("problem reading keypair file");
 
-    //     // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-    //     let state = State::new(Cluster::Devnet);
-    //     let app = create_app(Cluster::Devnet);
-    //     let token_owner = Pubkey::new_unique();
-    //     let mint = Pubkey::new_unique();
+        let state = State::new(Cluster::Localnet);
+        // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
+        let app = create_app(Cluster::Devnet);
 
-    //     let data = get_mint_promo_tx::Data {
-    //         account: token_owner.to_string(),
-    //     };
+        let token_account = fetch_token_account(&state.data_url).await;
 
-    //     let message = urlencoding::encode(MESSAGE);
+        let query = serde_json::json!({ "query": TOKEN_ACCOUNT_QUERY, "variables": {"id": token_account.to_string()}});
+        let result: serde_json::Value = state
+            .solana
+            .client
+            .post(&state.data_url)
+            .json(&query)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
 
-    //     let response = app
-    //         .oneshot(
-    //             Request::builder()
-    //                 .method(Method::POST)
-    //                 .uri(format!(
-    //                     "/promo/burn-delegated/{}/{}",
-    //                     mint.to_string(),
-    //                     message.into_owned(),
-    //                 ))
-    //                 .header(header::CONTENT_TYPE, "application/json")
-    //                 .body(Body::from(serde_json::to_vec(&data).unwrap()))
-    //                 .unwrap(),
-    //         )
-    //         .await
-    //         .unwrap();
+        let (mint, token_owner, group) =
+            get_mint_owner_group_from_token_account_query(&promo_owner.pubkey(), &result).unwrap();
 
-    //     assert_eq!(response.status(), StatusCode::OK);
+        let data = get_mint_promo_tx::Data {
+            account: promo_owner.pubkey().to_string(),
+        };
 
-    //     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-    //     let parsed_response: burn_delegated_promo::ResponseData =
-    //         serde_json::from_slice(&body).unwrap();
+        let message = urlencoding::encode(MESSAGE);
 
-    //     let txd: Transaction = bincode::deserialize(
-    //         &base64::decode::<String>(parsed_response.transaction.clone()).unwrap(),
-    //     )
-    //     .unwrap();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri(format!(
+                        "/promo/burn-delegated/{}/{}",
+                        token_account.to_string(),
+                        message.into_owned(),
+                    ))
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(serde_json::to_vec(&data).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
 
-    //     let instruction = create_burn_delegated_promo_instruction(
-    //         state.promo_owner.pubkey(),
-    //         token_owner,
-    //         mint,
-    //         state.platform,
-    //         None,
-    //     )
-    //     .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
 
-    //     let mut tx = Transaction::new_with_payer(&[instruction], Some(&state.promo_owner.pubkey()));
-    //     tx.try_partial_sign(&[&state.promo_owner], txd.message.recent_blockhash)
-    //         .unwrap();
-    //     let serialized = bincode::serialize(&tx).unwrap();
-    //     let transaction = base64::encode(serialized);
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let parsed_response: PayResponse = serde_json::from_slice(&body).unwrap();
 
-    //     assert_eq!(
-    //         parsed_response,
-    //         burn_delegated_promo::ResponseData {
-    //             transaction,
-    //             message: MESSAGE.to_owned(),
-    //         }
-    //     );
-    // }
+        let instruction = create_burn_delegated_promo_instruction(
+            promo_owner.pubkey(),
+            group,
+            token_owner,
+            mint,
+            state.platform,
+            None,
+        )
+        .unwrap();
+
+        let tx = Transaction::new_with_payer(&[instruction], Some(&promo_owner.pubkey()));
+        let serialized = bincode::serialize(&tx).unwrap();
+        let transaction = base64::encode(serialized);
+
+        assert_eq!(
+            parsed_response,
+            PayResponse {
+                transaction,
+                message: MESSAGE.to_owned(),
+            }
+        );
+    }
 
     #[tokio::test]
     async fn test_create_buyxproduct_promo() {
         dotenv::dotenv().ok();
+        let promo_owner = read_keypair_file("../target/deploy/promo_owner-keypair.json")
+            .expect("problem reading keypair file");
+        let group_seed = read_keypair_file("../target/deploy/group_seed-keypair.json")
+            .expect("problem reading keypair file");
+
+        let (group, _) = find_group_address(&group_seed.pubkey());
 
         // This test requires a local validator to be running. Whereas the other tests return prepared
         // transactions, this one sends a transaction to create a Promo on chain.
         if let Ok(_) = TcpListener::bind("127.0.0.1:8899".parse::<SocketAddr>().unwrap()) {
             assert!(false, "localnet validator not started")
         }
+
+        let state = State::new(Cluster::Localnet);
+
+        state
+            .solana
+            .request_airdrop(promo_owner.pubkey().to_string(), 1_000_000_000)
+            .await
+            .unwrap();
+
+        state
+            .solana
+            .request_airdrop(group.to_string(), 1_000_000_000)
+            .await
+            .unwrap();
 
         let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
         let addr = listener.local_addr().unwrap();
@@ -550,24 +641,38 @@ pub mod test {
                     .file_name(file_path.split("/").last().unwrap())
                     .mime_str(&content_type)
                     .unwrap(),
-            )
-            .text(
-                "memo",
-                serde_json::json!({"reference": "tester", "memo": "have a great day"}).to_string(),
             );
 
+        let memo =
+            serde_json::json!({"reference": "tester", "memo": "have a great day"}).to_string();
         let client = reqwest::Client::new();
         let response = client
-            .post(format!("http://{}/promo/create", addr))
+            .post(format!(
+                "http://{}/promo/create/{}/{}/{}",
+                addr,
+                promo_owner.pubkey(),
+                group_seed.pubkey().to_string(),
+                memo,
+            ))
             .multipart(form)
             .send()
             .await
             .unwrap()
-            .json::<serde_json::Value>()
+            .json::<PayResponse>()
             .await
             .unwrap();
 
-        println!("{:?}", &response);
+        let mut txd: Transaction =
+            bincode::deserialize(&base64::decode::<String>(response.transaction.clone()).unwrap())
+                .unwrap();
+
+        txd.try_partial_sign(&[&promo_owner], txd.message.recent_blockhash)
+            .unwrap();
+
+        let serialized = bincode::serialize(&txd).unwrap();
+        let tx_str = base64::encode(serialized);
+        let response = state.solana.post_transaction_test(&tx_str).await.unwrap();
+
         assert!(&response
             .as_object()
             .unwrap()
@@ -580,12 +685,32 @@ pub mod test {
     #[tokio::test]
     async fn test_create_buyxcurrency_promo() {
         dotenv::dotenv().ok();
+        let promo_owner = read_keypair_file("../target/deploy/promo_owner-keypair.json")
+            .expect("problem reading keypair file");
+        let group_seed = read_keypair_file("../target/deploy/group_seed-keypair.json")
+            .expect("problem reading keypair file");
+
+        let (group, _) = find_group_address(&group_seed.pubkey());
 
         // This test requires a local validator to be running. Whereas the other tests return prepared
         // transactions, this one sends a transaction to create a Promo on chain.
         if let Ok(_) = TcpListener::bind("127.0.0.1:8899".parse::<SocketAddr>().unwrap()) {
             assert!(false, "localnet validator not started")
         }
+
+        let state = State::new(Cluster::Localnet);
+
+        state
+            .solana
+            .request_airdrop(promo_owner.pubkey().to_string(), 1_000_000_000)
+            .await
+            .unwrap();
+
+        state
+            .solana
+            .request_airdrop(group.to_string(), 1_000_000_000)
+            .await
+            .unwrap();
 
         let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
         let addr = listener.local_addr().unwrap();
@@ -651,24 +776,38 @@ pub mod test {
                     .file_name(file_path.split("/").last().unwrap())
                     .mime_str(&content_type)
                     .unwrap(),
-            )
-            .text(
-                "memo",
-                serde_json::json!({"reference": "tester", "memo": "have a great day"}).to_string(),
             );
 
+        let memo =
+            serde_json::json!({"reference": "tester", "memo": "have a great day"}).to_string();
         let client = reqwest::Client::new();
         let response = client
-            .post(format!("http://{}/promo/create", addr))
+            .post(format!(
+                "http://{}/promo/create/{}/{}/{}",
+                addr,
+                promo_owner.pubkey(),
+                group_seed.pubkey().to_string(),
+                memo,
+            ))
             .multipart(form)
             .send()
             .await
             .unwrap()
-            .json::<serde_json::Value>()
+            .json::<PayResponse>()
             .await
             .unwrap();
 
-        println!("{:?}", &response);
+        let mut txd: Transaction =
+            bincode::deserialize(&base64::decode::<String>(response.transaction.clone()).unwrap())
+                .unwrap();
+
+        txd.try_partial_sign(&[&promo_owner], txd.message.recent_blockhash)
+            .unwrap();
+
+        let serialized = bincode::serialize(&txd).unwrap();
+        let tx_str = base64::encode(serialized);
+        let response = state.solana.post_transaction_test(&tx_str).await.unwrap();
+
         assert!(&response
             .as_object()
             .unwrap()

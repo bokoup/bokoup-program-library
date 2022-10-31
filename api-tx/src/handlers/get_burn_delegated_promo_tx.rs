@@ -4,38 +4,34 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use solana_sdk::{signer::Signer, transaction::Transaction};
+use solana_sdk::transaction::Transaction;
 use std::{str::FromStr, sync::Arc};
 
 use crate::{
     error::AppError,
-    handlers::Params,
     utils::{
-        data::{get_group_from_promo_group_query, MINT_QUERY},
-        solana::create_delegate_promo_instruction,
+        data::{get_mint_owner_group_from_token_account_query, TOKEN_ACCOUNT_QUERY},
+        solana::create_burn_delegated_promo_instruction,
     },
     State,
 };
 
-use super::PayResponse;
+use super::{BurnDelegatedParams, PayResponse};
 
 pub async fn handler(
     Json(data): Json<Data>,
-    Path(Params {
-        mint_string,
+    Path(BurnDelegatedParams {
+        token_account_string,
         message,
         memo,
-    }): Path<Params>,
+    }): Path<BurnDelegatedParams>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<PayResponse>, AppError> {
-    tracing::debug!(mint_string = mint_string, message, memo);
+    tracing::debug!(token_account_string, message, memo);
 
-    let token_owner = Pubkey::from_str(&data.account)?;
-    let payer = state.platform_signer.pubkey();
+    let payer = Pubkey::from_str(&data.account)?;
 
-    let mint = Pubkey::from_str(&mint_string)?;
-
-    let query = serde_json::json!({ "query": MINT_QUERY, "variables": {"mint": mint_string}});
+    let query = serde_json::json!({ "query": TOKEN_ACCOUNT_QUERY, "variables": {"id": token_account_string}});
     let result: serde_json::Value = state
         .solana
         .client
@@ -46,12 +42,19 @@ pub async fn handler(
         .json()
         .await?;
 
-    let group = get_group_from_promo_group_query(&payer, &result)?;
+    let (mint, token_owner, group) =
+        get_mint_owner_group_from_token_account_query(&payer, &result)?;
 
-    let instruction = create_delegate_promo_instruction(payer, group, token_owner, mint, memo)?;
+    let instruction = create_burn_delegated_promo_instruction(
+        payer,
+        group,
+        token_owner,
+        mint,
+        state.platform,
+        memo,
+    )?;
 
     let tx = Transaction::new_with_payer(&[instruction], Some(&payer));
-
     let serialized = bincode::serialize(&tx)?;
     let transaction = base64::encode(serialized);
 
@@ -66,4 +69,5 @@ pub struct Data {
     pub account: String,
 }
 
+// https://sandbox.dev.clover.com/v3/apps/MAC8DQKWCCB1R/merchants/XKDCJNW9JXGM1/notifications
 // https://sandbox.dev.clover.com/v3/apps/MAC8DQKWCCB1R/merchants/XKDCJNW9JXGM1/notifications
