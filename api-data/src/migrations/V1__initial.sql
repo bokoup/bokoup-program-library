@@ -36,6 +36,20 @@ CREATE TABLE public.promo (
 ALTER TABLE ONLY public.promo
     ADD CONSTRAINT promo_pkey PRIMARY KEY (id);
 
+CREATE TABLE public.create_promo_group (
+    signature text NOT NULL,
+    payer text NOT NULL,
+    promo_group text NOT NULL,
+    seed text NOT NULL,
+    lamports bigint NOT NULL,
+    memo jsonb,
+    slot bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE ONLY public.create_promo_group
+    ADD CONSTRAINT create_promo_group_pkey PRIMARY KEY (signature);
+
 CREATE TABLE public.create_promo (
     signature text NOT NULL,
     payer text NOT NULL,
@@ -45,8 +59,8 @@ CREATE TABLE public.create_promo (
     promo text NOT NULL,
     platform text NOT NULL,
     admin_settings text NOT NULL,
-    slot bigint NOT NULL,
     memo jsonb,
+    slot bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     modified_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -73,6 +87,7 @@ ALTER TABLE ONLY public.mint_promo_token
 CREATE TABLE public.delegate_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
+    delegate text NOT NULL,
     token_owner text NOT NULL,
     authority text NOT NULL,
     promo text NOT NULL,

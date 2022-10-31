@@ -721,6 +721,7 @@ dependencies = [
  "clap 3.2.22",
  "deadpool-postgres",
  "dotenv",
+ "lazy_static",
  "libc",
  "log",
  "mpl-auction-house",

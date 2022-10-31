@@ -106,7 +106,8 @@ mod tests {
         slot: u64,
         write_version: u64,
     ) {
-        queries::bpl_token_metadata::group::upsert(client, key, account, slot, write_version).await;
+        queries::bpl_token_metadata::promo_group::upsert(client, key, account, slot, write_version)
+            .await;
         let row = client
             .query_one(
                 "SELECT * FROM promo_group WHERE id = $1",
@@ -378,7 +379,12 @@ mod tests {
             )
             .await;
         } else if table == "burn_delegated_promo_token" {
-            queries::bpl_token_metadata::delegate_promo_token::upsert(
+            queries::bpl_token_metadata::burn_delegated_promo_token::upsert(
+                client, signature, accounts, data, slot,
+            )
+            .await;
+        } else if table == "create_promo_group" {
+            queries::bpl_token_metadata::create_promo_group::upsert(
                 client, signature, accounts, data, slot,
             )
             .await;
@@ -428,7 +434,13 @@ mod tests {
         let data: &[u8] = &[0; 8];
         let accounts: Vec<Pubkey> = (0..10).map(|_| Pubkey::new_unique()).collect();
 
-        for table in vec!["create_promo", "mint_promo_token", "delegate_promo_token"] {
+        for table in vec![
+            "create_promo_group",
+            "create_promo",
+            "mint_promo_token",
+            "delegate_promo_token",
+            "burn_delegated_promo_token",
+        ] {
             it_upserts_transaction(&client, &Signature::default(), &accounts, data, 42, table)
                 .await;
         }

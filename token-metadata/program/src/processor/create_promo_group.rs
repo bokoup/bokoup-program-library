@@ -9,14 +9,14 @@ impl<'info> CreatePromoGroup<'info> {
     pub fn process(&mut self, data: PromoGroup, lamports: u64, memo: Option<String>) -> Result<()> {
         msg!("Create group");
 
-        *self.group = data;
+        *self.promo_group = data;
 
         transfer_sol(
             CpiContext::new(
                 self.system_program.to_account_info(),
                 TransferSol {
                     payer: self.payer.to_account_info(),
-                    to: self.group.to_account_info(),
+                    to: self.promo_group.to_account_info(),
                 },
             ),
             lamports,

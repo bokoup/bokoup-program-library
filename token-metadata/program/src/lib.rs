@@ -36,7 +36,7 @@ pub mod bpl_token_metadata {
 
     /// Creates Group account used to grant transaction execution permissions to
     /// group members.
-    pub fn create_group(
+    pub fn create_promo_group(
         ctx: Context<CreatePromoGroup>,
         data: PromoGroup,
         lamports: u64,
@@ -144,16 +144,18 @@ pub struct CreatePromoGroup<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     /// CHECK: pubkey checked via constraint
+    pub seed: UncheckedAccount<'info>,
     #[account(
-        init_if_needed,
-        constraint = group.members.len() <= MEMBERS_CAPACITY as usize,
+        init,
+        constraint = data.members.len() <= MEMBERS_CAPACITY as usize,
         constraint = data.owner == payer.key(),
         constraint = data.members.contains(&data.owner),
-        seeds = [data.seed.as_ref()], bump,
+        constraint = data.seed == seed.key(),
+        seeds = [seed.key().as_ref()], bump,
         payer = payer,
-        space = data.len()
+        space = PromoGroup::LEN
     )]
-    pub group: Account<'info, PromoGroup>,
+    pub promo_group: Account<'info, PromoGroup>,
     pub memo_program: Program<'info, SplMemo>,
     pub system_program: Program<'info, System>,
 }
@@ -273,21 +275,23 @@ pub struct MintPromoToken<'info> {
 
 /// Accounts related to the delegation of a promo token.
 ///
-/// Delegates a token to the payer.
+/// Delegates a token to the delegate.
 ///
-/// Checks to make sure signer is a member of group specified in owner property of
-/// promo. (Could include a designated platform address if merchants wanted customers
-/// to be able to delegate their tokens without them having to sign).
+/// Checks to make sure delegate is a member of group specified in owner property of
+/// promo to ensure delegate will be able to sign to have the group pay platform burn
+/// fee.
 ///
-/// Also requires sigture from token owner as the authrity of the token account.
+/// Requires signature from token owner as the authority of the token account.
 ///
 /// No platform fees result from delegating a token.
 #[derive(Accounts, Clone)]
 pub struct DelegatePromoToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    /// CHECK: checked via group constraints
+    pub delegate: UncheckedAccount<'info>,
     #[account(mut,
-        constraint = group.members.contains(&payer.key()),
+        constraint = group.members.contains(&delegate.key()),
         constraint = group.key() == promo.owner,
     )]
     pub group: Account<'info, PromoGroup>,
@@ -310,7 +314,8 @@ pub struct DelegatePromoToken<'info> {
 /// Accounts related to the burning of a delegated promo token.
 ///
 /// Checks to make sure signer is a member of group specified in owner property of
-/// promo. Only requires
+/// promo in order to execute transaction to transfer lamports from group to platform
+/// to pay `burn_promo_token_lamports`.
 ///
 /// The fee specified in the `burn_promo_token_lamports` property of the [AdminSettings] account
 /// is transferred from the [Group] specified in the `owner` property of the [Promo] from the

@@ -1,3 +1,27 @@
 table:
   name: promo_group
   schema: public
+array_relationships:
+  - name: promos
+    using:
+      manual_configuration:
+        column_mapping:
+          id: owner
+        insertion_order: null
+        remote_table:
+          name: promo
+          schema: public
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - slot
+        - write_version
+        - nonce
+        - members
+        - id
+        - owner
+        - seed
+        - created_at
+        - modified_at
+      filter: {}

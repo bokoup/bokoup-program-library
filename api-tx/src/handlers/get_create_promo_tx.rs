@@ -7,15 +7,25 @@ use crate::{
     State,
 };
 use anchor_lang::prelude::Pubkey;
-use axum::{extract::Multipart, Extension, Json};
+use axum::{
+    extract::{Multipart, Path},
+    Extension, Json,
+};
 use serde_json::{Map, Value};
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 use std::{str::FromStr, sync::Arc};
 
+use super::{CreatePromoParams, PayResponse};
+
 pub async fn handler(
     mut multipart: Multipart,
+    Path(CreatePromoParams {
+        payer,
+        group_seed,
+        memo,
+    }): Path<CreatePromoParams>,
     Extension(state): Extension<Arc<State>>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<Json<PayResponse>, AppError> {
     // Parse data - two parts - json data and image.
     let mut metadata_data = if let Some(field) = multipart.next_field().await.unwrap() {
         if field.name().expect("name field should exist") == "metadata" {
@@ -54,37 +64,37 @@ pub async fn handler(
         ))
     }?;
 
-    let group_seed_string = if let Some(field) = multipart.next_field().await.unwrap() {
-        if field.name().expect("name field should exist") == "groupSeed" {
-            let memo_string = field.text().await.map_err(|_| {
-                AppError::CreatePromoRequestError("groupSeed value not valid".to_string())
-            })?;
-            Ok(memo_string)
-        } else {
-            return Err(AppError::CreatePromoRequestError(
-                "invalid field name".to_string(),
-            ));
-        }
-    } else {
-        Err(AppError::CreatePromoRequestError(
-            "groupSeed field did not exist".to_string(),
-        ))
-    }?;
+    // let group_seed_string = if let Some(field) = multipart.next_field().await.unwrap() {
+    //     if field.name().expect("name field should exist") == "groupSeed" {
+    //         let memo_string = field.text().await.map_err(|_| {
+    //             AppError::CreatePromoRequestError("groupSeed value not valid".to_string())
+    //         })?;
+    //         Ok(memo_string)
+    //     } else {
+    //         return Err(AppError::CreatePromoRequestError(
+    //             "invalid field name".to_string(),
+    //         ));
+    //     }
+    // } else {
+    //     Err(AppError::CreatePromoRequestError(
+    //         "groupSeed field did not exist".to_string(),
+    //     ))
+    // }?;
 
-    let memo = if let Some(field) = multipart.next_field().await.unwrap() {
-        if field.name().expect("name field should exist") == "memo" {
-            let memo_string = field.text().await.map_err(|_| {
-                AppError::CreatePromoRequestError("memo value not valid".to_string())
-            })?;
-            Some(memo_string)
-        } else {
-            return Err(AppError::CreatePromoRequestError(
-                "invalid field name".to_string(),
-            ));
-        }
-    } else {
-        None
-    };
+    // let memo = if let Some(field) = multipart.next_field().await.unwrap() {
+    //     if field.name().expect("name field should exist") == "memo" {
+    //         let memo_string = field.text().await.map_err(|_| {
+    //             AppError::CreatePromoRequestError("memo value not valid".to_string())
+    //         })?;
+    //         Some(memo_string)
+    //     } else {
+    //         return Err(AppError::CreatePromoRequestError(
+    //             "invalid field name".to_string(),
+    //         ));
+    //     }
+    // } else {
+    //     None
+    // };
 
     let metadata_data_obj =
         metadata_data
@@ -104,10 +114,11 @@ pub async fn handler(
     let (name, symbol, max_mint, max_burn) = get_promo_args(metadata_data_obj)?;
     let mint_keypair = Keypair::new();
 
-    let group_seed = Pubkey::from_str(&group_seed_string)?;
+    let payer = Pubkey::from_str(&payer)?;
+    let group_seed = Pubkey::from_str(&group_seed)?;
     // Create promo instruction.
     let ix = create_create_promo_instruction(
-        state.promo_owner.pubkey(),
+        payer,
         group_seed,
         mint_keypair.pubkey(),
         state.platform,
@@ -120,17 +131,16 @@ pub async fn handler(
         memo,
     )?;
 
-    let mut tx = Transaction::new_with_payer(&[ix], Some(&state.promo_owner.pubkey()));
+    let mut tx = Transaction::new_with_payer(&[ix], Some(&payer));
     let latest_blockhash = state.solana.get_latest_blockhash().await?;
-    tx.sign(&[&state.promo_owner, &mint_keypair], latest_blockhash);
+    tx.partial_sign(&[&mint_keypair], latest_blockhash);
 
     let serialized = bincode::serialize(&tx)?;
-    let tx_str = base64::encode(serialized);
-    let result = state.solana.post_transaction_test(&tx_str).await?;
-
-    tracing::debug!(result = format!("{:?}", result));
-
-    Ok(Json(result))
+    let transaction = base64::encode(serialized);
+    Ok(Json(PayResponse {
+        transaction,
+        message: "Create promo".to_string(),
+    }))
 }
 
 pub fn get_promo_args(

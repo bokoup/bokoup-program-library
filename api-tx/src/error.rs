@@ -21,8 +21,12 @@ pub enum AppError {
     BundlrError(#[from] bundlr_sdk::error::BundlrError),
     #[error("create promo request: {0}")]
     CreatePromoRequestError(String),
+    #[error("data query error")]
+    DataQueryError,
     #[error("pubkey error")]
     PubkeyError(#[from] ParsePubkeyError),
+    #[error("payer not in members")]
+    PayerNotInMembers,
     #[error("reqwest: {0}")]
     Reqwest(#[from] reqwest::Error),
     #[error("serde json: {0}")]
