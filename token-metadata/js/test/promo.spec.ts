@@ -57,6 +57,7 @@ describe('promo', () => {
   const groupMember1 = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/group_member_1-keypair.json'))),
   );
+  console.log("groupMember1", groupMember1.publicKey.toString())
   const plaformSigner = Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/platform_signer-keypair.json'))),
   );
@@ -110,7 +111,7 @@ describe('promo', () => {
   it('creates group', async () => {
 
     const members = [promoOwner.publicKey, groupMember1.publicKey, plaformSigner.publicKey]
-    const lamports = 20_000_000;
+    const lamports = 500_000_000;
     const memo = "Created a new group for bokoup store group";
 
     [group] = await tokenMetadataProgramPromoOwner.createPromoGroup(groupSeed, members, lamports, memo);
@@ -133,7 +134,7 @@ describe('promo', () => {
       );
 
     expect(groupAccountInfo?.lamports).to.equal(
-      23626160,
+      503626160,
       'Group lamports incorrect.',
     );
 
@@ -164,7 +165,7 @@ describe('promo', () => {
     const metadataData2: DataV2 = {
       name: 'Promo 2',
       symbol: 'P2',
-      uri: 'https://arweave.net/RK8RPpNWs1nVy0qqvKVAFcVQOxOltGMyDrJtt6SktTc',
+      uri: 'https://arweave.net/CxK7yXw78I__Ln0V5xNsBe_9CasCahUxkL9Q_2WNsXE',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,
@@ -261,17 +262,14 @@ describe('promo', () => {
       memo: "burned delegated token"
     };
 
-    const [tokenAccountAccount, mintAccount] = await tokenMetadataProgramGroupMember1
+    const tokenAccount = await tokenMetadataProgramGroupMember1
       .burnDelegatedPromoToken(mint, tokenOwner, platform.publicKey, groupSeed, JSON.stringify(memo))
-      .then((tokenAccount) =>
-        Promise.all([
-          tokenMetadataProgram.getTokenAccount(tokenAccount),
-          tokenMetadataProgram.getMintAccount(mint),
-        ]),
-      );
+
+    const mintAccount = await tokenMetadataProgram.getMintAccount(mint)
+    await expect(tokenMetadataProgram.getTokenAccount(tokenAccount)).to.be.rejected
 
     promoExtended = await tokenMetadataProgram.getPromoExtended(mint);
-    expect(Number(tokenAccountAccount.amount)).to.equal(0, 'Token account amount incorrect.');
+
     expect(Number(mintAccount.supply)).to.equal(0, 'Mint supply incorrect.');
     expect(promoExtended.burnCount).to.equal(1, 'Promo burns incorrect.');
 

@@ -30,7 +30,12 @@ pub async fn handler(
     }): Path<DelegateParams>,
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<PayResponse>, AppError> {
-    tracing::debug!(mint_string = mint_string, message, memo);
+    tracing::debug!(
+        mint_string = mint_string,
+        delegate_string = delegate_string,
+        message = message,
+        memo = memo
+    );
 
     let token_owner = Pubkey::from_str(&data.account)?;
     let payer = state.platform_signer.pubkey();
@@ -54,7 +59,9 @@ pub async fn handler(
     let instruction =
         create_delegate_promo_instruction(payer, delegate, group, token_owner, mint, memo)?;
 
-    let tx = Transaction::new_with_payer(&[instruction], Some(&payer));
+    let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));
+    let recent_blockhash = state.solana.get_latest_blockhash().await?;
+    tx.try_partial_sign(&[&state.platform_signer], recent_blockhash)?;
 
     let serialized = bincode::serialize(&tx)?;
     let transaction = base64::encode(serialized);

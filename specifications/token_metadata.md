@@ -80,6 +80,7 @@ This will determine whether the buyXProduct threshold has been met for each prod
 ```json
 {
     "name": "String",
+    "symbol": "String",
     "description": "String",
     "image": "URL -> String ",
     "attributes": [

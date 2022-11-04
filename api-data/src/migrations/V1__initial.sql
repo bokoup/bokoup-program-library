@@ -88,6 +88,7 @@ CREATE TABLE public.delegate_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
     delegate text NOT NULL,
+    promo_group text NOT NULL,
     token_owner text NOT NULL,
     authority text NOT NULL,
     promo text NOT NULL,

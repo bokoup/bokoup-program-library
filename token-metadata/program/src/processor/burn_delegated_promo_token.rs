@@ -3,7 +3,7 @@ use crate::{error::ProgramError, BurnDelegatedPromoToken, TransferSol};
 use anchor_lang::prelude::*;
 
 impl<'info> BurnDelegatedPromoToken<'info> {
-    pub fn process(&mut self, memo: Option<String>) -> Result<()> {
+    pub fn process(&mut self, memo: Option<String>, authority_seeds: [&[u8]; 2]) -> Result<()> {
         msg!("Burn delegated promo token");
 
         // Check to see if burn_count is still below max_burn.
@@ -36,6 +36,19 @@ impl<'info> BurnDelegatedPromoToken<'info> {
             CpiContext::new(self.token_program.to_account_info(), burn_ctx),
             1,
         )?;
+
+        if self.token_account.amount == 1 {
+            let close_ctx = anchor_spl::token::CloseAccount {
+                account: self.token_account.to_account_info(),
+                destination: self.group.to_account_info(),
+                authority: self.authority.to_account_info(),
+            };
+            anchor_spl::token::close_account(CpiContext::new_with_signer(
+                self.token_program.to_account_info(),
+                close_ctx,
+                &[&authority_seeds],
+            ))?;
+        }
 
         if let Some(memo) = memo {
             let account_infos = vec![self.payer.to_account_info()];

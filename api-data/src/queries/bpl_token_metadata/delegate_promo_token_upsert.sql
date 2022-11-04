@@ -2,6 +2,7 @@ INSERT INTO delegate_promo_token (
     signature,
     payer,
     delegate,
+    promo_group,
     token_owner,
     authority,
     promo,
@@ -9,11 +10,12 @@ INSERT INTO delegate_promo_token (
     memo,
     slot
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT ON CONSTRAINT delegate_promo_token_pkey DO UPDATE 
     SET
         payer = EXCLUDED.payer,
         delegate = EXCLUDED.delegate,
+        promo_group = EXCLUDED.promo_group,
         token_owner = EXCLUDED.token_owner,
         authority = EXCLUDED.authority,
         promo = EXCLUDED.promo,

@@ -3,7 +3,7 @@ use crate::{error::ProgramError, MintPromoToken};
 use anchor_lang::prelude::*;
 
 impl<'info> MintPromoToken<'info> {
-    pub fn process(&mut self, authority_seeds: [&[u8]; 2], memo: Option<String>) -> Result<()> {
+    pub fn process(&mut self, memo: Option<String>, authority_seeds: [&[u8]; 2]) -> Result<()> {
         msg!("Mint promo token");
 
         // Check to see if mint_count is still below max_mint.
@@ -12,6 +12,19 @@ impl<'info> MintPromoToken<'info> {
                 return Err(ProgramError::MaxMintExceeded.into());
             }
         }
+
+        // Set the close authority to the program so it can close token
+        // accounts when it burns the last token in them.
+        let set_authority_ctx = anchor_spl::token::SetAuthority {
+            current_authority: self.token_owner.to_account_info(),
+            account_or_mint: self.token_account.to_account_info(),
+        };
+
+        anchor_spl::token::set_authority(
+            CpiContext::new(self.token_program.to_account_info(), set_authority_ctx),
+            anchor_spl::token::spl_token::instruction::AuthorityType::CloseAccount,
+            Some(self.authority.key()),
+        )?;
 
         let mint_to_ctx = anchor_spl::token::MintTo {
             mint: self.mint.to_account_info(),

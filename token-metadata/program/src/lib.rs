@@ -75,7 +75,7 @@ pub mod bpl_token_metadata {
         memo: Option<String>,
     ) -> Result<()> {
         let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
-        ctx.accounts.process(authority_seeds, memo)
+        ctx.accounts.process(memo, authority_seeds)
     }
 
     /// Delegates a promo token.
@@ -91,7 +91,9 @@ pub mod bpl_token_metadata {
         ctx: Context<'a, 'b, 'c, 'info, BurnDelegatedPromoToken<'info>>,
         memo: Option<String>,
     ) -> Result<()> {
-        ctx.accounts.process(memo)
+        let authority_seeds = [AUTHORITY_PREFIX.as_bytes(), &[ctx.bumps[AUTHORITY_PREFIX]]];
+
+        ctx.accounts.process(memo, authority_seeds)
     }
 
     /// Creates a non-fungible token. Will be used in the future with additional promo token form

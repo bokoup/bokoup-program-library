@@ -186,14 +186,13 @@ pub fn create_mint_promo_instruction(
 pub fn create_delegate_promo_instruction(
     payer: Pubkey,
     delegate: Pubkey,
-    group_seed: Pubkey,
+    group: Pubkey,
     token_owner: Pubkey,
     mint: Pubkey,
     memo: Option<String>,
 ) -> Result<Instruction, AppError> {
     let (promo, _promo_bump) = find_promo_address(&mint);
     let token_account = find_associated_token_address(&token_owner, &mint);
-    let (group, _group_bump) = find_group_address(&group_seed);
 
     let accounts = delegate_promo_token_accounts {
         payer,

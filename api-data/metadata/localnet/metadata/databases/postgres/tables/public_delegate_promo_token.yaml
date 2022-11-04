@@ -24,14 +24,16 @@ select_permissions:
   - role: public
     permission:
       columns:
-        - slot
-        - memo
         - authority
+        - created_at
+        - delegate
+        - memo
+        - modified_at
         - payer
         - promo
+        - promo_group
         - signature
+        - slot
         - token_account
         - token_owner
-        - created_at
-        - modified_at
       filter: {}
