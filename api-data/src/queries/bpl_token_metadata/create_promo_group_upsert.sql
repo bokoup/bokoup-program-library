@@ -1,8 +1,8 @@
 INSERT INTO create_promo_group (
     signature,
     payer,
-    promo_group,
     seed,
+    promo_group,
     lamports,
     memo,
     slot
@@ -11,8 +11,8 @@ INSERT INTO create_promo_group (
 ON CONFLICT ON CONSTRAINT create_promo_group_pkey DO UPDATE 
     SET
         payer = EXCLUDED.payer,
-        promo_group = EXCLUDED.promo_group,
         seed = EXCLUDED.seed,
+        promo_group = EXCLUDED.promo_group,
         lamports = EXCLUDED.lamports,
         memo = EXCLUDED.memo,
         slot = EXCLUDED.slot,

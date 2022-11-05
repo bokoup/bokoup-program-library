@@ -158,6 +158,15 @@ pub fn create_mint_promo_instruction(
     let (promo, _promo_bump) = find_promo_address(&mint);
     let token_account = find_associated_token_address(&token_owner, &mint);
 
+    tracing::debug!(
+        payer = payer.to_string(),
+        group = group.to_string(),
+        token_owner = token_owner.to_string(),
+        token_account = token_account.to_string(),
+        mint = mint.to_string(),
+        memo = memo.clone().unwrap_or("".to_string())
+    );
+
     let accounts = mint_promo_token_accounts {
         payer,
         group,

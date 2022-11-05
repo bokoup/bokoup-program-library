@@ -30,11 +30,11 @@ pub async fn upsert(
 
     let signature = signature.to_string();
     let payer = &accounts[0];
-    let token_owner = &accounts[1];
-    let mint = &accounts[2];
-    let authority = &accounts[3];
-    let promo = &accounts[4];
-    let admin_settings = &accounts[5];
+    let promo_group = &accounts[1];
+    let token_owner = &accounts[2];
+    let mint = &accounts[3];
+    let authority = &accounts[4];
+    let promo = &accounts[5];
     let token_account = &accounts[6];
     let slot = slot as i64;
 
@@ -44,11 +44,11 @@ pub async fn upsert(
             &[
                 &signature,
                 payer,
+                promo_group,
                 token_owner,
                 mint,
                 authority,
                 promo,
-                admin_settings,
                 token_account,
                 &Json::<Option<serde_json::Value>>(memo),
                 &slot,

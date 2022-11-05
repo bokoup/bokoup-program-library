@@ -37,18 +37,20 @@ impl<'info> BurnDelegatedPromoToken<'info> {
             1,
         )?;
 
-        if self.token_account.amount == 1 {
-            let close_ctx = anchor_spl::token::CloseAccount {
-                account: self.token_account.to_account_info(),
-                destination: self.group.to_account_info(),
-                authority: self.authority.to_account_info(),
-            };
-            anchor_spl::token::close_account(CpiContext::new_with_signer(
-                self.token_program.to_account_info(),
-                close_ctx,
-                &[&authority_seeds],
-            ))?;
-        }
+        // TODO: update indexer to delete token accounts if the close account instruction
+        // is included.
+        // if self.token_account.amount == 1 {
+        //     let close_ctx = anchor_spl::token::CloseAccount {
+        //         account: self.token_account.to_account_info(),
+        //         destination: self.group.to_account_info(),
+        //         authority: self.authority.to_account_info(),
+        //     };
+        //     anchor_spl::token::close_account(CpiContext::new_with_signer(
+        //         self.token_program.to_account_info(),
+        //         close_ctx,
+        //         &[&authority_seeds],
+        //     ))?;
+        // }
 
         if let Some(memo) = memo {
             let account_infos = vec![self.payer.to_account_info()];

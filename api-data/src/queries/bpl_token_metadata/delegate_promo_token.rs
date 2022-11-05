@@ -33,7 +33,7 @@ pub async fn upsert(
     let delegate = &accounts[1];
     let promo_group = &accounts[2];
     let token_owner = &accounts[3];
-    let authority = &accounts[4];
+    let mint = &accounts[4];
     let promo = &accounts[5];
     let token_account = &accounts[6];
     let slot = slot as i64;
@@ -47,7 +47,7 @@ pub async fn upsert(
                 delegate,
                 promo_group,
                 token_owner,
-                authority,
+                mint,
                 promo,
                 token_account,
                 &Json::<Option<serde_json::Value>>(memo),

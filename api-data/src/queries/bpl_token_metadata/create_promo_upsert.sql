@@ -1,6 +1,7 @@
 INSERT INTO create_promo (
     signature,
     payer,
+    promo_group,
     mint,
     metadata,
     authority,
@@ -10,10 +11,11 @@ INSERT INTO create_promo (
     memo,
     slot
 )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT ON CONSTRAINT create_promo_pkey DO UPDATE 
     SET
         payer = EXCLUDED.payer,
+        promo_group = EXCLUDED.promo_group,
         mint = EXCLUDED.mint,
         metadata = EXCLUDED.metadata,
         authority = EXCLUDED.authority,

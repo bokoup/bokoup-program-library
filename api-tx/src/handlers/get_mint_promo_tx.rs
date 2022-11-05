@@ -54,6 +54,13 @@ pub async fn handler(
         }
     }?;
 
+    tracing::debug!(
+        payer = payer.to_string(),
+        group = group.to_string(),
+        token_owner = token_owner.to_string(),
+        mint = mint.to_string(),
+        memo = memo.clone().unwrap_or("".to_string())
+    );
     let instruction = create_mint_promo_instruction(payer, group, token_owner, mint, memo)?;
 
     let mut tx = Transaction::new_with_payer(&[instruction], Some(&payer));

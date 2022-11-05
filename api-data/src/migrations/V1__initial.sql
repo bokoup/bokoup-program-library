@@ -39,8 +39,8 @@ ALTER TABLE ONLY public.promo
 CREATE TABLE public.create_promo_group (
     signature text NOT NULL,
     payer text NOT NULL,
-    promo_group text NOT NULL,
     seed text NOT NULL,
+    promo_group text NOT NULL,
     lamports bigint NOT NULL,
     memo jsonb,
     slot bigint NOT NULL,
@@ -53,6 +53,7 @@ ALTER TABLE ONLY public.create_promo_group
 CREATE TABLE public.create_promo (
     signature text NOT NULL,
     payer text NOT NULL,
+    promo_group text NOT NULL,
     mint text NOT NULL,
     metadata text NOT NULL,
     authority text NOT NULL,
@@ -70,11 +71,11 @@ ALTER TABLE ONLY public.create_promo
 CREATE TABLE public.mint_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
+    promo_group text NOT NULL,
     token_owner text NOT NULL,
     mint text NOT NULL,
     authority text NOT NULL,
     promo text NOT NULL,
-    admin_settings text NOT NULL,
     token_account text NOT NULL,
     memo jsonb,
     slot bigint NOT NULL,
@@ -90,7 +91,7 @@ CREATE TABLE public.delegate_promo_token (
     delegate text NOT NULL,
     promo_group text NOT NULL,
     token_owner text NOT NULL,
-    authority text NOT NULL,
+    mint text NOT NULL,
     promo text NOT NULL,
     token_account text NOT NULL,
     memo jsonb,
@@ -104,14 +105,15 @@ ALTER TABLE ONLY public.delegate_promo_token
 CREATE TABLE public.burn_delegated_promo_token (
     signature text NOT NULL,
     payer text NOT NULL,
+    promo_group text NOT NULL,
     mint text NOT NULL,
     authority text NOT NULL,
     promo text NOT NULL,
     platform text NOT NULL,
     admin_settings text NOT NULL,
     token_account text NOT NULL,
-    slot bigint NOT NULL,
     memo jsonb,
+    slot bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     modified_at timestamp with time zone DEFAULT now() NOT NULL
 );
