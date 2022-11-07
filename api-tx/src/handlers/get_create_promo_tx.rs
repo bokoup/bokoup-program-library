@@ -64,44 +64,14 @@ pub async fn handler(
         ))
     }?;
 
-    // let group_seed_string = if let Some(field) = multipart.next_field().await.unwrap() {
-    //     if field.name().expect("name field should exist") == "groupSeed" {
-    //         let memo_string = field.text().await.map_err(|_| {
-    //             AppError::CreatePromoRequestError("groupSeed value not valid".to_string())
-    //         })?;
-    //         Ok(memo_string)
-    //     } else {
-    //         return Err(AppError::CreatePromoRequestError(
-    //             "invalid field name".to_string(),
-    //         ));
-    //     }
-    // } else {
-    //     Err(AppError::CreatePromoRequestError(
-    //         "groupSeed field did not exist".to_string(),
-    //     ))
-    // }?;
-
-    // let memo = if let Some(field) = multipart.next_field().await.unwrap() {
-    //     if field.name().expect("name field should exist") == "memo" {
-    //         let memo_string = field.text().await.map_err(|_| {
-    //             AppError::CreatePromoRequestError("memo value not valid".to_string())
-    //         })?;
-    //         Some(memo_string)
-    //     } else {
-    //         return Err(AppError::CreatePromoRequestError(
-    //             "invalid field name".to_string(),
-    //         ));
-    //     }
-    // } else {
-    //     None
-    // };
-
     let metadata_data_obj =
         metadata_data
             .as_object_mut()
             .ok_or(AppError::CreatePromoRequestError(
                 "metadata data part should be an object".to_string(),
             ))?;
+
+    tracing::debug!(here = "here");
 
     // Upload image to Arweave.
     let (image_url, content_type, state) = upload_image(image_data, state).await?;

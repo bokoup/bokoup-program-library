@@ -19,20 +19,13 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
-use url::Url;
-use utils::{
-    clover::Clover,
-    solana::{Cluster, Solana},
-};
+use utils::solana::{Cluster, Solana};
 
 pub mod error;
 pub mod handlers;
 pub mod utils;
 
-pub const CLOVER_URL: &str = "https://sandbox.dev.clover.com/v3/apps/";
-pub const CLOVER_APP_ID: &str = "MAC8DQKWCCB1R";
-pub const PROMO_OWNER_KEYPAIR_PATH: &str = "/keys/promo_owner-keypair.json";
-pub const PLATFORM_SIGNER_KEYPAIR_PATH: &str = "/keys/platform_signer-keypair.json";
+pub const PLATFORM_SIGNER_KEYPAIR_PATH: &str = "/keys/platform_signer/platform_signer-keypair.json";
 
 // `platform` is the address of the account for collecting platform fees
 // `platform_signer` is the courtesy signing key that pays minor network
@@ -45,14 +38,13 @@ pub struct State {
     pub platform_signer: Keypair,
     pub platform: Pubkey,
     pub solana: Solana,
-    pub clover: Clover,
     pub bundlr: bundlr_sdk::Bundlr<Ed25519Signer>,
     pub data_url: String,
 }
 
 impl State {
     fn new(cluster: Cluster) -> Self {
-        let data = std::fs::read(PROMO_OWNER_KEYPAIR_PATH).unwrap();
+        let data = std::fs::read(PLATFORM_SIGNER_KEYPAIR_PATH).unwrap();
         let bytes: Vec<u8> = serde_json::from_slice(&data).unwrap();
         let keypair = DalekKeypair::from_bytes(&bytes).unwrap();
         let signer = Ed25519Signer::new(keypair);
@@ -67,14 +59,6 @@ impl State {
                     .timeout(Duration::from_secs(10))
                     .build()
                     .unwrap(),
-            },
-            clover: Clover {
-                base_url: CLOVER_URL
-                    .parse::<Url>()
-                    .unwrap()
-                    .join(format!("{CLOVER_APP_ID}/").as_str())
-                    .unwrap(),
-                client: reqwest::Client::new(),
             },
             bundlr: Bundlr::new(
                 "https://node1.bundlr.network".to_string(),
@@ -395,8 +379,8 @@ pub mod test {
             .expect("problem reading keypair file");
 
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let state = State::new(Cluster::Devnet);
-        let app = create_app(Cluster::Devnet);
+        let state = State::new(Cluster::Localnet);
+        let app = create_app(Cluster::Localnet);
         let token_owner = Pubkey::new_unique();
         let mint = fetch_mint(&state.data_url).await;
 
@@ -447,6 +431,11 @@ pub mod test {
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         let parsed_response: PayResponse = serde_json::from_slice(&body).unwrap();
 
+        let txd: Transaction = bincode::deserialize(
+            &base64::decode::<String>(parsed_response.transaction.clone()).unwrap(),
+        )
+        .unwrap();
+
         let instruction = create_delegate_promo_instruction(
             platform_signer.pubkey(),
             delegate.pubkey(),
@@ -457,7 +446,11 @@ pub mod test {
         )
         .unwrap();
 
-        let tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer.pubkey()));
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer.pubkey()));
+        let recent_blockhash = txd.message.recent_blockhash;
+
+        tx.try_partial_sign(&[&state.platform_signer], recent_blockhash)
+            .unwrap();
         let serialized = bincode::serialize(&tx).unwrap();
         let transaction = base64::encode(serialized);
 
@@ -473,7 +466,7 @@ pub mod test {
     #[tokio::test]
     async fn test_get_burn_delegated_promo_tx() {
         dotenv::dotenv().ok();
-        let promo_owner = read_keypair_file("../target/deploy/promo_owner-keypair.json")
+        let group_member = read_keypair_file("../target/deploy/group_member_1-keypair.json")
             .expect("problem reading keypair file");
 
         let state = State::new(Cluster::Localnet);
@@ -496,10 +489,10 @@ pub mod test {
             .unwrap();
 
         let (mint, token_owner, group) =
-            get_mint_owner_group_from_token_account_query(&promo_owner.pubkey(), &result).unwrap();
+            get_mint_owner_group_from_token_account_query(&group_member.pubkey(), &result).unwrap();
 
         let data = get_mint_promo_tx::Data {
-            account: promo_owner.pubkey().to_string(),
+            account: group_member.pubkey().to_string(),
         };
 
         let message = urlencoding::encode(MESSAGE);
@@ -525,8 +518,13 @@ pub mod test {
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         let parsed_response: PayResponse = serde_json::from_slice(&body).unwrap();
 
+        let txd: Transaction = bincode::deserialize(
+            &base64::decode::<String>(parsed_response.transaction.clone()).unwrap(),
+        )
+        .unwrap();
+
         let instruction = create_burn_delegated_promo_instruction(
-            promo_owner.pubkey(),
+            group_member.pubkey(),
             group,
             token_owner,
             mint,
@@ -535,7 +533,10 @@ pub mod test {
         )
         .unwrap();
 
-        let tx = Transaction::new_with_payer(&[instruction], Some(&promo_owner.pubkey()));
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&group_member.pubkey()));
+        let recent_blockhash = txd.message.recent_blockhash;
+        tx.message.recent_blockhash = recent_blockhash;
+
         let serialized = bincode::serialize(&tx).unwrap();
         let transaction = base64::encode(serialized);
 
