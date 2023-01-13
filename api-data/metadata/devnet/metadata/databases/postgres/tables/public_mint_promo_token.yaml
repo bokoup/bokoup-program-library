@@ -20,20 +20,3 @@ object_relationships:
         remote_table:
           name: promo
           schema: public
-select_permissions:
-  - role: public
-    permission:
-      columns:
-        - slot
-        - memo
-        - admin_settings
-        - authority
-        - mint
-        - payer
-        - promo
-        - signature
-        - token_account
-        - token_owner
-        - created_at
-        - modified_at
-      filter: {}

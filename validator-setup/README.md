@@ -1,8 +1,10 @@
 # validator setup
 
+## devnet validator on edgevana
+
 Core scripts come from [Edgevana](https://github.com/shiraz-edgevana/solana).
 
-## Initial Setup
+### initial setup
 1. Setup core server
 2. Install rust toolchain
 3. Build geyser-plugin
@@ -14,7 +16,7 @@ Core scripts come from [Edgevana](https://github.com/shiraz-edgevana/solana).
 
 Need to install build-essentials pkg-config libssl-dev
 
-## Update
+### update
 1. Pull `bokoup-program-library` and `geyser-plugin-nats` repos
 2. `cargo-build --release` in each
 3. `cp /home/ubuntu/bokoup-program-library/target/release/libbpl_indexer.so /usr/local/bin`

@@ -8,24 +8,22 @@ use axum::{
 use bundlr_sdk::{Bundlr, Ed25519Signer};
 use ed25519_dalek::Keypair as DalekKeypair;
 use handlers::*;
-use solana_sdk::{
-    commitment_config::CommitmentLevel, pubkey::Pubkey, signature::read_keypair_file,
-    signer::keypair::Keypair,
-};
-use std::{borrow::Cow, str::FromStr, sync::Arc, time::Duration};
+use solana_sdk::{commitment_config::CommitmentLevel, pubkey::Pubkey, signer::keypair::Keypair};
+use std::{borrow::Cow, sync::Arc, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{
     add_extension::AddExtensionLayer,
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+use url::Url;
 use utils::solana::{Cluster, Solana};
 
 pub mod error;
 pub mod handlers;
 pub mod utils;
 
-pub const PLATFORM_SIGNER_KEYPAIR_PATH: &str = "/keys/platform_signer/platform_signer-keypair.json";
+// pub const PLATFORM_SIGNER_KEYPAIR_PATH: &str = "/keys/platform_signer/platform_signer-keypair.json";
 
 // `platform` is the address of the account for collecting platform fees
 // `platform_signer` is the courtesy signing key that pays minor network
@@ -34,24 +32,27 @@ pub const PLATFORM_SIGNER_KEYPAIR_PATH: &str = "/keys/platform_signer/platform_s
 // `platform_signer` is also the payer for bundlr transactions.
 // TODO: check bundlr balance programatically and alert of running low.
 
+pub fn parse_string_to_keypair(str: &str) -> Keypair {
+    let bytes: Vec<u8> = serde_json::from_str(str).unwrap();
+    Keypair::from_bytes(&bytes).unwrap()
+}
+
 pub struct State {
     pub platform_signer: Keypair,
     pub platform: Pubkey,
     pub solana: Solana,
     pub bundlr: bundlr_sdk::Bundlr<Ed25519Signer>,
-    pub data_url: String,
+    pub data_url: Url,
 }
 
 impl State {
-    fn new(cluster: Cluster) -> Self {
-        let data = std::fs::read(PLATFORM_SIGNER_KEYPAIR_PATH).unwrap();
-        let bytes: Vec<u8> = serde_json::from_slice(&data).unwrap();
-        let keypair = DalekKeypair::from_bytes(&bytes).unwrap();
+    fn new(cluster: Cluster, platform: Pubkey, platform_signer: Keypair, data_url: Url) -> Self {
+        let keypair = DalekKeypair::from_bytes(&platform_signer.to_bytes()).unwrap();
         let signer = Ed25519Signer::new(keypair);
 
         Self {
-            platform_signer: read_keypair_file(PLATFORM_SIGNER_KEYPAIR_PATH).unwrap(),
-            platform: Pubkey::from_str("2R7GkXvQQS4iHptUvQMhDvRSNXL8tAuuASNvCYgz3GQW").unwrap(),
+            platform_signer,
+            platform,
             solana: Solana {
                 cluster,
                 commitment: CommitmentLevel::Confirmed,
@@ -66,12 +67,17 @@ impl State {
                 "sol".to_string(),
                 signer,
             ),
-            data_url: "https://shining-sailfish-15.hasura.app/v1/graphql/".to_string(),
+            data_url,
         }
     }
 }
 
-pub fn create_app(cluster: Cluster) -> Router {
+pub fn create_app(
+    cluster: Cluster,
+    platform: Pubkey,
+    platform_signer: Keypair,
+    data_url: Url,
+) -> Router {
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_headers([header::CONTENT_TYPE])
@@ -126,7 +132,12 @@ pub fn create_app(cluster: Cluster) -> Router {
                 .concurrency_limit(1024)
                 .timeout(Duration::from_secs(30))
                 .layer(TraceLayer::new_for_http())
-                .layer(AddExtensionLayer::new(Arc::new(State::new(cluster))))
+                .layer(AddExtensionLayer::new(Arc::new(State::new(
+                    cluster,
+                    platform,
+                    platform_signer,
+                    data_url,
+                ))))
                 .into_inner(),
         )
 }
@@ -161,13 +172,18 @@ pub mod test {
     use bpl_token_metadata::utils::find_group_address;
     use handlers::PayResponse;
     use solana_sdk::{signature::Signer, transaction::Transaction};
-    use std::net::{SocketAddr, TcpListener};
+    use std::{
+        net::{SocketAddr, TcpListener},
+        str::FromStr,
+    };
     use tokio::fs;
     use tower::ServiceExt;
     use tracing_subscriber::{fmt, prelude::*, EnvFilter};
     use utils::{data::*, solana::*};
 
     const MESSAGE: &str = "This is a really long message that tells you to do something.";
+    const PLATFORM: &str = "2R7GkXvQQS4iHptUvQMhDvRSNXL8tAuuASNvCYgz3GQW";
+    const DATA_URL: &str = "https://shining-sailfish-15.hasura.app/v1/graphql/";
 
     async fn fetch_mint(url: &String) -> Pubkey {
         let client = reqwest::Client::new();
@@ -251,8 +267,17 @@ pub mod test {
             .with(EnvFilter::from_default_env())
             .init();
 
+        dotenv::dotenv().ok();
+        let platform_signer =
+            parse_string_to_keypair(&std::env::var("PLATFORM_SIGNER_KEYPAIR").unwrap());
+
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let app = create_app(Cluster::Devnet);
+        let app = create_app(
+            Cluster::Devnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            platform_signer,
+            Url::from_str(DATA_URL).unwrap(),
+        );
         let mint = Pubkey::new_unique();
         let message = urlencoding::encode(MESSAGE);
         let response = app
@@ -287,21 +312,36 @@ pub mod test {
     // to pay for transaction fees with no further merchant approval required.
     #[tokio::test]
     async fn test_get_mint_promo_tx() {
-        let platform_signer = read_keypair_file("../target/deploy/platform_signer-keypair.json")
-            .expect("problem reading keypair file");
+        dotenv::dotenv().ok();
+        let platform_signer =
+            parse_string_to_keypair(&std::env::var("PLATFORM_SIGNER_KEYPAIR").unwrap());
+
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let state = State::new(Cluster::Devnet);
-        let app = create_app(Cluster::Devnet);
+        let platform_signer_pubkey = platform_signer.pubkey();
+
+        let state = State::new(
+            Cluster::Devnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            Keypair::from_bytes(&platform_signer.to_bytes()).unwrap(),
+            Url::from_str(DATA_URL).unwrap(),
+        );
+        let app = create_app(
+            Cluster::Devnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            Keypair::from_bytes(&platform_signer.to_bytes()).unwrap(),
+            Url::from_str(DATA_URL).unwrap(),
+        );
+
         let token_owner = Pubkey::new_unique();
 
-        let mint = fetch_mint(&state.data_url).await;
+        let mint = fetch_mint(&state.data_url.to_string()).await;
 
         let query =
             serde_json::json!({ "query": MINT_QUERY, "variables": {"mint": mint.to_string()}});
         let result: serde_json::Value = state
             .solana
             .client
-            .post(&state.data_url)
+            .post(&state.data_url.to_string())
             .json(&query)
             .send()
             .await
@@ -310,7 +350,7 @@ pub mod test {
             .await
             .unwrap();
 
-        let group = get_group_from_promo_group_query(&platform_signer.pubkey(), &result).unwrap();
+        let group = get_group_from_promo_group_query(&platform_signer_pubkey, &result).unwrap();
 
         let data = get_mint_promo_tx::Data {
             account: token_owner.to_string(),
@@ -346,7 +386,7 @@ pub mod test {
         .unwrap();
 
         let instruction = create_mint_promo_instruction(
-            platform_signer.pubkey(),
+            Pubkey::new(platform_signer_pubkey.as_ref().clone()),
             group,
             token_owner,
             mint,
@@ -354,7 +394,7 @@ pub mod test {
         )
         .unwrap();
 
-        let mut tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer.pubkey()));
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer_pubkey));
         tx.try_partial_sign(&[&platform_signer], txd.message.recent_blockhash)
             .unwrap();
         let serialized = bincode::serialize(&tx).unwrap();
@@ -373,23 +413,35 @@ pub mod test {
     #[tokio::test]
     async fn test_get_delegate_promo_tx() {
         dotenv::dotenv().ok();
-        let platform_signer = read_keypair_file("../target/deploy/platform_signer-keypair.json")
-            .expect("problem reading keypair file");
-        let delegate = read_keypair_file("../target/deploy/group_member_1-keypair.json")
-            .expect("problem reading keypair file");
+        let platform_signer =
+            parse_string_to_keypair(&std::env::var("PLATFORM_SIGNER_KEYPAIR").unwrap());
 
-        // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let state = State::new(Cluster::Localnet);
-        let app = create_app(Cluster::Localnet);
+        let platform_signer_pubkey = platform_signer.pubkey();
+
+        let delegate = parse_string_to_keypair(&std::env::var("GROUP_MEMBER_1_KEYPAIR").unwrap());
+
+        let state = State::new(
+            Cluster::Localnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            Keypair::from_bytes(&platform_signer.to_bytes()).unwrap(),
+            Url::from_str(DATA_URL).unwrap(),
+        );
+        let app = create_app(
+            Cluster::Devnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            platform_signer,
+            Url::from_str(DATA_URL).unwrap(),
+        );
+
         let token_owner = Pubkey::new_unique();
-        let mint = fetch_mint(&state.data_url).await;
+        let mint = fetch_mint(&state.data_url.to_string()).await;
 
         let query =
             serde_json::json!({ "query": MINT_QUERY, "variables": {"mint": mint.to_string()}});
         let result: serde_json::Value = state
             .solana
             .client
-            .post(&state.data_url)
+            .post(&state.data_url.to_string())
             .json(&query)
             .send()
             .await
@@ -437,7 +489,7 @@ pub mod test {
         .unwrap();
 
         let instruction = create_delegate_promo_instruction(
-            platform_signer.pubkey(),
+            platform_signer_pubkey,
             delegate.pubkey(),
             group,
             token_owner,
@@ -446,7 +498,7 @@ pub mod test {
         )
         .unwrap();
 
-        let mut tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer.pubkey()));
+        let mut tx = Transaction::new_with_payer(&[instruction], Some(&platform_signer_pubkey));
         let recent_blockhash = txd.message.recent_blockhash;
 
         tx.try_partial_sign(&[&state.platform_signer], recent_blockhash)
@@ -466,20 +518,33 @@ pub mod test {
     #[tokio::test]
     async fn test_get_burn_delegated_promo_tx() {
         dotenv::dotenv().ok();
-        let group_member = read_keypair_file("../target/deploy/group_member_1-keypair.json")
-            .expect("problem reading keypair file");
+        let platform_signer =
+            parse_string_to_keypair(&std::env::var("PLATFORM_SIGNER_KEYPAIR").unwrap());
 
-        let state = State::new(Cluster::Localnet);
+        let group_member =
+            parse_string_to_keypair(&std::env::var("GROUP_MEMBER_1_KEYPAIR").unwrap());
+
+        let state = State::new(
+            Cluster::Localnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            Keypair::from_bytes(&platform_signer.to_bytes()).unwrap(),
+            Url::from_str(DATA_URL).unwrap(),
+        );
         // ok to be devnet, only pulling blockhash - will succeed even if localnet validator not running
-        let app = create_app(Cluster::Devnet);
+        let app = create_app(
+            Cluster::Devnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            platform_signer,
+            Url::from_str(DATA_URL).unwrap(),
+        );
 
-        let token_account = fetch_token_account(&state.data_url).await;
+        let token_account = fetch_token_account(&state.data_url.to_string()).await;
 
         let query = serde_json::json!({ "query": TOKEN_ACCOUNT_QUERY, "variables": {"id": token_account.to_string()}});
         let result: serde_json::Value = state
             .solana
             .client
-            .post(&state.data_url)
+            .post(&state.data_url.to_string())
             .json(&query)
             .send()
             .await
@@ -552,10 +617,11 @@ pub mod test {
     #[tokio::test]
     async fn test_create_buyxproduct_promo() {
         dotenv::dotenv().ok();
-        let promo_owner = read_keypair_file("../target/deploy/promo_owner-keypair.json")
-            .expect("problem reading keypair file");
-        let group_seed = read_keypair_file("../target/deploy/group_seed-keypair.json")
-            .expect("problem reading keypair file");
+        let promo_owner = parse_string_to_keypair(&std::env::var("PROMO_OWNER_KEYPAIR").unwrap());
+        let platform_signer =
+            parse_string_to_keypair(&std::env::var("PLATFORM_SIGNER_KEYPAIR").unwrap());
+
+        let group_seed = parse_string_to_keypair(&std::env::var("GROUP_SEED_KEYPAIR").unwrap());
 
         let (group, _) = find_group_address(&group_seed.pubkey());
 
@@ -565,7 +631,12 @@ pub mod test {
             assert!(false, "localnet validator not started")
         }
 
-        let state = State::new(Cluster::Localnet);
+        let state = State::new(
+            Cluster::Localnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            Keypair::from_bytes(&platform_signer.to_bytes()).unwrap(),
+            Url::from_str(DATA_URL).unwrap(),
+        );
 
         state
             .solana
@@ -585,7 +656,15 @@ pub mod test {
         tokio::spawn(async move {
             axum::Server::from_tcp(listener)
                 .unwrap()
-                .serve(create_app(Cluster::Localnet).into_make_service())
+                .serve(
+                    create_app(
+                        Cluster::Localnet,
+                        Pubkey::from_str(PLATFORM.into()).unwrap(),
+                        platform_signer,
+                        Url::from_str(DATA_URL).unwrap(),
+                    )
+                    .into_make_service(),
+                )
                 .await
                 .unwrap();
         });
@@ -691,10 +770,11 @@ pub mod test {
     #[tokio::test]
     async fn test_create_buyxcurrency_promo() {
         dotenv::dotenv().ok();
-        let promo_owner = read_keypair_file("../target/deploy/promo_owner-keypair.json")
-            .expect("problem reading keypair file");
-        let group_seed = read_keypair_file("../target/deploy/group_seed-keypair.json")
-            .expect("problem reading keypair file");
+        let promo_owner = parse_string_to_keypair(&std::env::var("PROMO_OWNER_KEYPAIR").unwrap());
+        let platform_signer =
+            parse_string_to_keypair(&std::env::var("PLATFORM_SIGNER_KEYPAIR").unwrap());
+
+        let group_seed = parse_string_to_keypair(&std::env::var("GROUP_SEED_KEYPAIR").unwrap());
 
         let (group, _) = find_group_address(&group_seed.pubkey());
 
@@ -704,7 +784,12 @@ pub mod test {
             assert!(false, "localnet validator not started")
         }
 
-        let state = State::new(Cluster::Localnet);
+        let state = State::new(
+            Cluster::Localnet,
+            Pubkey::from_str(PLATFORM.into()).unwrap(),
+            Keypair::from_bytes(&platform_signer.to_bytes()).unwrap(),
+            Url::from_str(DATA_URL).unwrap(),
+        );
 
         state
             .solana
@@ -724,7 +809,15 @@ pub mod test {
         tokio::spawn(async move {
             axum::Server::from_tcp(listener)
                 .unwrap()
-                .serve(create_app(Cluster::Localnet).into_make_service())
+                .serve(
+                    create_app(
+                        Cluster::Localnet,
+                        Pubkey::from_str(PLATFORM.into()).unwrap(),
+                        platform_signer,
+                        Url::from_str(DATA_URL).unwrap(),
+                    )
+                    .into_make_service(),
+                )
                 .await
                 .unwrap();
         });

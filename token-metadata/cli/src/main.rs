@@ -3,15 +3,16 @@ use anchor_client::{
         commitment_config::CommitmentConfig,
         signature::{read_keypair_file, Keypair},
         signer::Signer,
-        system_program,
+        system_program
     },
     Client, Cluster,
 };
-use bpl_token_metadata::{instruction, state::AdminSettings, utils};
+use bpl_token_metadata::{instruction, accounts, state::{AdminSettings, PromoGroup}, utils::{self, find_group_address}};
 use bundlr_sdk::{tags::Tag, Bundlr, Ed25519Signer};
 use clap::{Parser, Subcommand};
 use ed25519_dalek::Keypair as DalekKeypair;
-use std::{path::PathBuf, rc::Rc};
+use tokio::time::sleep;
+use std::{path::PathBuf, rc::Rc, time::Duration};
 use tracing_subscriber::prelude::*;
 
 #[derive(Parser)]
@@ -26,8 +27,14 @@ struct Cli {
     program_authority_path: PathBuf,
     #[clap(long, default_value = "../../target/deploy/platform-keypair.json", value_parser = valid_file_path)]
     platform_path: PathBuf,
+    #[clap(long, default_value = "../../target/deploy/platform_signer-keypair.json", value_parser = valid_file_path)]
+    platform_signer_path: PathBuf,
     #[clap(long, default_value = "../../target/deploy/promo_owner-keypair.json", value_parser = valid_file_path)]
     promo_owner_path: PathBuf,
+    #[clap(long, default_value = "../../target/deploy/group_member_1-keypair.json", value_parser = valid_file_path)]
+    group_member_path: PathBuf,
+    #[clap(long, default_value = "../../target/deploy/group_seed-keypair.json", value_parser = valid_file_path)]
+    group_seed_path: PathBuf,
     #[clap(long, default_value_t = Cluster::Localnet, value_parser)]
     cluster: Cluster,
 }
@@ -47,6 +54,10 @@ enum Commands {
         #[clap(long, default_value_t = 10_000_000, value_parser)]
         burn_promo_token_lamports: u64,
     },
+    CreateGroup {
+        #[clap(long, default_value_t = 500_000_000, value_parser)]
+        lamports: u64,
+    },
     #[clap(about = "Tesing requesting data from graphql api")]
     TestGql,
 }
@@ -65,10 +76,20 @@ async fn main() -> anyhow::Result<()> {
             .init();
     }
 
-    let [program_authority_keypair, platform_keypair, promo_owner_keypair]: [Keypair; 3] = [
+    let [
+        program_authority_keypair,
+        platform_keypair,
+        platform_signer_keypair,
+        promo_owner_keypair,
+        group_member_keypair,
+        group_seed_keypair]: [Keypair; 6] = 
+        [
         &cli.program_authority_path,
         &cli.platform_path,
+        &cli.platform_signer_path,
         &cli.promo_owner_path,
+        &cli.group_member_path,
+        &cli.group_seed_path,
     ]
     .map(|p| read_keypair_file(p).expect("problem reading keypair file"));
 
@@ -84,18 +105,18 @@ async fn main() -> anyhow::Result<()> {
 
             let program = client.program(bpl_token_metadata::id());
 
-            [
+            for pubkey in [
                 &program_authority,
-                &platform_keypair.pubkey(),
+                &platform_signer_keypair.pubkey(),
                 &promo_owner_keypair.pubkey(),
-            ]
-            .iter()
-            .for_each(|pubkey| {
+            ] {
                 program
-                    .rpc()
-                    .request_airdrop(pubkey, sol * 1_000_000_000)
-                    .unwrap();
-            });
+                .rpc()
+                .request_airdrop(pubkey, sol * 1_000_000_000)
+                .unwrap();
+                sleep(Duration::from_secs(1)).await;
+            };
+            
 
             Ok(())
         }
@@ -113,6 +134,7 @@ async fn main() -> anyhow::Result<()> {
 
             let program = client.program(bpl_token_metadata::id());
             let (admin_settings, _) = utils::find_admin_address();
+            
             let program_data = utils::find_program_data_address();
             tracing::info!(program_data = program_data.to_string());
 
@@ -139,6 +161,58 @@ async fn main() -> anyhow::Result<()> {
                 admin_settings_account = format!("{:?}", admin_settings_account)
             );
             Ok(())
+        }
+        Commands::CreateGroup {
+            lamports
+        } => {
+            let payer = promo_owner_keypair.pubkey();
+            let rc_payer_keypair = Rc::new(promo_owner_keypair);
+            let client = Client::new_with_options(
+                cli.cluster,
+                rc_payer_keypair,
+                CommitmentConfig::confirmed(),
+            );
+
+            let program = client.program(bpl_token_metadata::id());
+
+            let (promo_group, nonce) = find_group_address(&group_seed_keypair.pubkey());
+            let members = vec![
+                payer,
+                group_member_keypair.pubkey(),
+                platform_signer_keypair.pubkey()
+                ];
+
+            let data = PromoGroup {
+                    owner: payer,
+                    seed: group_seed_keypair.pubkey(),
+                    nonce,
+                    members,
+                };
+
+            let tx = program
+            .request()
+            .accounts(accounts::CreatePromoGroup {
+                payer,
+                seed: group_seed_keypair.pubkey(),
+                promo_group,
+                memo_program: spl_memo::ID,
+                system_program: system_program::ID,
+            })
+            .args(instruction::CreatePromoGroup {
+                data,
+                lamports: lamports.clone(),
+                memo: None,
+            })
+            .send()?;
+            
+            let promo_group_account: PromoGroup = program.account(promo_group)?;
+            tracing::info!(
+                signature = tx.to_string(),
+                promo_group_account = format!("{:?}", promo_group_account)
+            );
+                
+            Ok(())
+
         }
         Commands::UploadString => {
             let data = tokio::fs::read(&cli.program_authority_path).await.unwrap();

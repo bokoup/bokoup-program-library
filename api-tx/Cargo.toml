@@ -13,6 +13,8 @@ base64 = "0.13.0"
 bincode = "1.3.3"
 bpl-token-metadata = { path = "../token-metadata/program" }
 bundlr-sdk = { git = "https://github.com/CalebEverett/bundlr-rust-sdk", branch = "roll_back_primitive_type", features = ["solana"] }
+clap = { version="3.2.22", features=["derive", "env"] }
+dotenv = "0.15"
 ed25519-dalek = "1.0.1"
 futures = "0.3"
 mime = "0.3.16"

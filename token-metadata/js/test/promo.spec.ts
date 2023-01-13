@@ -8,20 +8,25 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 import * as dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../../demo-web/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+const process = require("process");
 
 describe('promo', () => {
+
   const tokenOwnerProvider = anchor.AnchorProvider.env();
   // Configure the client to use the local cluster.
   // anchor.setProvider(provider);
   const tokenOwner = tokenOwnerProvider.wallet.publicKey;
   const tokenMetadataProgram = new TokenMetadataProgram(tokenOwnerProvider);
 
+  // new Uint8Array(JSON.parse(fs.readFileSync('/keys/promo_owner-keypair.json'))),
   const promoOwner = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync('/keys/promo_owner-keypair.json'))),
+    new Uint8Array(JSON.parse(process.env.PROMO_OWNER_KEYPAIR)),
   );
 
-  const process = require("process");
+  console.log(promoOwner.publicKey);
+
+
   const url = process.env.ANCHOR_PROVIDER_URL;
   if (url === undefined) {
     throw new Error("ANCHOR_PROVIDER_URL is not defined");
@@ -39,7 +44,7 @@ describe('promo', () => {
   const tokenMetadataProgramPromoOwner = new TokenMetadataProgram(promoOwnerProvider);
 
   const platform = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(process.env.REACT_APP_PLATFORM_KEYPAIR!)),
+    new Uint8Array(JSON.parse(process.env.PLATFORM_KEYPAIR)),
   );
   console.log('promoOwner: ', promoOwner.publicKey.toString());
   console.log('platform: ', platform.publicKey.toString());
@@ -51,15 +56,15 @@ describe('promo', () => {
 
   let group: PublicKey;
   const groupSeed = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/group_seed-keypair.json'))),
+    new Uint8Array(JSON.parse(process.env.GROUP_SEED_KEYPAIR)),
   ).publicKey;
 
   const groupMember1 = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/group_member_1-keypair.json'))),
+    new Uint8Array(JSON.parse(process.env.GROUP_MEMBER_1_KEYPAIR)),
   );
   console.log("groupMember1", groupMember1.publicKey.toString())
   const plaformSigner = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync('target/deploy/platform_signer-keypair.json'))),
+    new Uint8Array(JSON.parse(process.env.PLATFORM_SIGNER_KEYPAIR)),
   );
 
   const tokenMetadataProgramGroupMember1 = new TokenMetadataProgram(new anchor.AnchorProvider(

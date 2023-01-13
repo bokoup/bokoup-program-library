@@ -39,7 +39,7 @@ pub async fn handler(
     let result: serde_json::Value = state
         .solana
         .client
-        .post(&state.data_url)
+        .post(&state.data_url.to_string())
         .json(&query)
         .send()
         .await?

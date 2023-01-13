@@ -128,6 +128,56 @@ This will determine whether the buyXCurrency threshold has been met for each out
 1. Get all related token accounts for the customer with amounts greater than zero
 1. Calculate discount amount for each eligible token account based total amount of the order and the discount percentage specified in the promo by getYPercent
 
+## loyalty
+
+### Specification
+```json
+{
+    "name": "String",
+    "symbol": "String",
+    "description": "String",
+    "image": "URL -> String ",
+    "attributes": [
+        {
+            "trait_type": "promoType",
+            "value": "loyalty",
+        },
+        {
+            "trait_type": "earnRateLevel0",
+            "value":  1 // Integer - points earned per 0.01 currency spent
+        },
+        {
+            "trait_type": "pointsLevel0",
+            "value": 10000 // Integer - number of points required to be eligible for rewardLevel0
+        },
+        {
+            "trait_type": "rewardLevel0",
+            "value": 500 // Integer - currency amount of discount in 0.01 currency available at pointsLevel0 
+        },
+    ],
+    "collection": {
+        "name": "String",
+        "family": "String"
+    },
+    "properties": {
+        "files": [
+            {
+                "uri": "URL -> String",
+                "type": "MimeType -> String"
+            },
+        ],
+        "category": "image"
+    }
+}
+```
+Points / rewards levels pairs would be added as an array so that you could have multiple thresholds, i.e., accumulate 10,000 points at a rate of 1 point per $0.01 cents for spending $100.00 and earn a reward of 500 points, or $5.00.
+
+### Business Logic
+#### Benefit / discount application
+1. Get all active merchant loyalty programs
+1. Get all customer token accounts for merchant loyalty programs
+1. Check to see if rewards available and calculate amount of reward applicable
+
 
 ## Purchase Flow
 ![bokoup pos flow](bokoup_flows.png "bokoup Clover pos flow")

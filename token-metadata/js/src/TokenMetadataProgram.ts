@@ -67,6 +67,7 @@ export class TokenMetadataProgram {
     burnPromoTokenLamports: number,
   ): Promise<PublicKey> {
     const [adminSettings] = await this.findAdminAddress();
+    const [programData] = await this.findProgramDataAdress();
 
     await this.program.methods
       .createAdminSettings({
@@ -76,6 +77,8 @@ export class TokenMetadataProgram {
       })
       .accounts({
         payer: platform.publicKey,
+        // program: this.PUBKEY,
+        // programData,
       })
       .signers([platform])
       .rpc();
@@ -373,6 +376,13 @@ export class TokenMetadataProgram {
     return await PublicKey.findProgramAddress(
       [groupSeed.toBuffer()],
       this.PUBKEY,
+    );
+  }
+
+  async findProgramDataAdress(): Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
+      [this.PUBKEY.toBytes()],
+      new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111"),
     );
   }
 }

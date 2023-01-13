@@ -2,6 +2,15 @@ table:
   name: promo
   schema: public
 object_relationships:
+  - name: groupObject
+    using:
+      manual_configuration:
+        column_mapping:
+          owner: id
+        insertion_order: null
+        remote_table:
+          name: promo_group
+          schema: public
   - name: metadataObject
     using:
       manual_configuration:
@@ -37,4 +46,3 @@ select_permissions:
         - created_at
         - modified_at
       filter: {}
-      limit: 100

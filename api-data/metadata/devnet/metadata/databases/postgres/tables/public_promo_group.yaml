@@ -1,31 +1,27 @@
 table:
-  name: token_account
+  name: promo_group
   schema: public
-object_relationships:
-  - name: mintObject
+array_relationships:
+  - name: promos
     using:
       manual_configuration:
         column_mapping:
-          mint: id
+          id: owner
         insertion_order: null
         remote_table:
-          name: mint
+          name: promo
           schema: public
 select_permissions:
   - role: public
     permission:
       columns:
-        - amount
-        - delegated_amount
-        - is_native
         - slot
         - write_version
-        - close_authority
-        - delegate
+        - nonce
+        - members
         - id
-        - mint
         - owner
-        - state
+        - seed
         - created_at
         - modified_at
       filter: {}

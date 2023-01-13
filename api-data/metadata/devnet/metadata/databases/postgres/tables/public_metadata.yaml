@@ -14,6 +14,7 @@ select_permissions:
         - primary_sale_happened
         - edition_nonce
         - seller_fee_basis_points
+        - metadata_json
         - collection_key
         - id
         - key
